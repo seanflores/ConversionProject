@@ -1,0 +1,200 @@
+
+;READ & WRITE NON-VOLATILE MEMORY WITH SUBROUTINES
+;
+
+;READ NON-VOLATILE MEMORY
+;  ENTRY:  R0  RAM destination address of bytes read, high byte first.
+;          R1  NV MEM source address of words read, high word first.
+;          R3  # words to be read from NV MEM.
+;   Also:  R2  used by routine as bit counter.
+
+;  Note that with the NMC93C46(56?), only 1 read instruction required 
+;    regardless of the number of words shifted out.
+;  However, best to leave program so that it can read either type.
+
+; NVREAD1W - ENTRY: R1 contains NVMEM address of 1 word to be read.
+;	     EXIT:  NVMEM3:2 contains word read.
+NVREAD1W: MOV	R0,#NVBUF3	; Read 1 word to NVBUF3:2
+NVREAD1C: MOV	R3,#1		; Read 1 word to MS byte R0, LS byte (DEC R0)
+NVREAD:                                                 
+;         CLR   EA              ; Disable interrupts
+NVRDLP:   MOV	A,#60H		; 0+1+Read OPCODE
+	  ACALL OPCODE
+          ACALL NVADDRS         ; Send READ NV address
+          SETB  F0              ; First byte of two flag
+          SETB  DO              ; Prepare port for input (read)
+          SETB  DI              ; In case DO,DI tied together
+RDLUP0:   MOV   R2,#08          ; Bit counter
+RDLUP1:   ACALL SKCYC           ; SK clock cycle
+          MOV   C,DO            ; Read DO
+          RLC   A               ; Rotate into A
+          DJNZ  R2,RDLUP1       ; Read 8 bits
+	  CPL	A		; Complements written to NVMEM so blank EEPROM
+				;  will CPL FF to 0.
+          MOV   @R0,A           ; Put byte read away in RAM
+          DEC   R0              ; Point to next RAM address
+          JBC   F0,RDLUP0       ; Repeat if that was first byte of word
+	  CLR   EPSEL		; Return to standby
+          DJNZ  R3,NVRDLP       ; Repeat for next word
+          RET
+
+;WRITE NON-VOLATILE MEMORY    ITC 93C56A or 93C56
+;
+;  ENTRY:  R0  Source of bytes written, high byte first.
+;          R1  NV MEM destination address of words written, high word first.
+;          R3  # of words to be written to NV MEM.
+;   Also:  R2  Used by routine as bit counter.
+
+; Erase/Write enable
+NVWRIT:   MOV   A,#40H		; 0+1+EWEN OP CODE	
+	  ACALL	OPCODE
+          MOV   A,#0C0H         ; Erase/Write enable address equiv
+; Next 2 lines .13 sec delay before writing to help protect from writing
+;  during power off transient.
+;	  DJNZ	SUFLG,$
+;	  DJNZ  SCRATCHF,$-3
+          ACALL WRTBYT          ; Execute Erase/Write enable
+	  CLR	EPSEL
+
+;Erase before writing required by ITC 93C56.  It is ignored by ITC 93C56A
+;  and National NMC93C56.  This section of code can be removed for the latter
+;  parts but might as well leave it in.  Faster writing doesn't appear 
+;  critical.  Could erase all before writing but since I am writing in batches
+;  I would have to change the main program to erase all only before the
+;  first batch and I'm not going to take the time now to re-do that part of
+;  program.
+;Erase before writing
+          JB    PWROFFF,WRRET   ; Dont write if PWROFFF flag has gotten set
+WRLUP3:   MOV	A,#70H		;0+1+Erase OP CODE
+	  ACALL OPCODE
+          ACALL NVADDRS		; Erase R1 address
+	  CLR   EPSEL
+	  ACALL WAITDO
+
+;End of section that can be removed. Move WRLUP3 label to here.
+          MOV   A,#50H          ; 0+1+Write OP CODE
+	  ACALL	OPCODE
+          ACALL NVADDRS         ; Write to R1 address
+          MOV   A,@R0           ; Get byte to be written
+	  CPL	A		; Complement written, see NVREAD
+          ACALL WRTBYT          ; Write byte to MS byte of NV MEM word
+          DEC   R0              ; Point to next RAM byte
+          MOV   A,@R0
+	  CPL	A		; Complement written, see NVREAD
+          ACALL WRTBYT          ; Write byte to LS byte of NV MEM word
+	  CLR   EPSEL           ; Clear chip select
+          DEC   R0              ; Point to next RAM byte
+          DEC   R1              ; Point to next NV MEM word
+;After erasing or writing, wait until DO goes high to signal that the self-
+;  programming is done before writing again.
+;Consider including time-out function as part of this wait for DO to go high
+;  that displays ERR # if NV MEM fails.
+          ACALL WAITDO
+          DJNZ  R3,WRLUP3       ; Repeat for next word
+
+;Erase/Write disable subroutine
+EWDIS:    MOV   A,#40H          ; 0+1+Erase/Write disable OP CODE
+	  ACALL OPCODE
+	  CLR	A
+          ACALL WRTBYT          ; E/W disable
+          CLR   EPSEL           ; Return to standby
+;         SETB  EA              ; Enable all interrupts
+WRRET:    RET
+
+WAITDO:   SETB  DO              ; Prepare DO port for read
+          SETB  DI              ; In case DO,DI tied together
+          SETB  EPSEL           ; Chip select EPSEL high
+          JNB   DO,$            ; Wait til self-timed program cycle is over
+          ACALL SKCYC           ; Return DO to tri-state
+	  CLR   EPSEL		; Return to standby
+          RET
+
+;Address subroutine.  
+
+NVADDRS:  MOV   A,R1            ; Put address in ACC
+WRTBYT:   MOV   R2,#08          ; Bit counter
+WBLOOP:   RLC   A               ; A  contains byte to be written
+          MOV   DI,C
+          ACALL SKCYC           ; Write 1 bit
+          DJNZ  R2,WBLOOP       ; Write 8 bits
+          CLR   DI
+          RET
+
+OPCODE:          
+	  SETB  EPSEL		; Chip select EPSEL high
+	  MOV	R2,#4
+OPLUP:    RLC	A
+	  MOV	DI,C
+	  ACALL SKCYC		; Write 1 bit
+	  DJNZ	R2,OPLUP	
+          CLR	DI
+          RET
+
+;SHIFT CLOCK
+SKCYC:    JB PWROFFF,SKRET	; Dont clock if PWROFFF flag has gotten set
+          SETB  SK              ; SK high
+          NOP			                ; Make SK high for 2.2 us for safety
+          CLR   SK              ; SK low
+SKRET:    RET
+          
+
+                  
+WSTART:   MOV	R0,#2CH		; LS RAM
+	  MOV	@R0,#03H	; LS DATA
+	  INC	R0
+	  MOV	@R0,#06H	; MS DATA
+	  MOV	R1,#05		; NV ADDRESS
+	  MOV	R3,#1		; # WORDS
+	  ACALL NVWRIT
+WSTOP:	  NOP
+	  JMP	CLDRESET
+
+RSTART:   MOV	R1,#05		; NVADDRESS
+	  ACALL NVREAD1W
+RSTOP:    NOP
+	  JMP   CLDRESET
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  NOP
+	  NOP
+          JMP   PWROFF

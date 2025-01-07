@@ -1,0 +1,29 @@
+;SAMC4.SAM MAIN PROGRAM SEGMENT
+
+$NOLIST
+$INCLUDE(RG51FB.PDF)            ; Symbolic names for 8052 BIT & DATA addresses
+                                ; Assemble using NOMOD51
+$LIST
+$INCLUDE(DEFC4.SAM)             ; Defines RAM locations
+
+          ORG   000H
+          CSEG
+$INCLUDE(INTRPTC4.SAM)          ; Program Interrupts
+
+          ORG   200H
+$INCLUDE(PWRONC4.SAM)           ; Power On reset routine
+
+          ORG   400H
+$INCLUDE(SERC2.SAM)             ; Serial communications
+
+          ORG   800H
+$INCLUDE(MAINPGC4.SAM)          ; Main Program		
+
+           ORG   0C00H
+$INCLUDE(NVMEM.SAM)              ; Read & Write routines for NV MEM
+
+           ORG   0D00H
+$INCLUDE(ARSUB.SAM)              ; Arithmetic subroutines
+
+
+          END

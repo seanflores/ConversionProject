@@ -1,0 +1,534 @@
+
+;MAINPGC5.SAM    MAIN PROGRAM    
+
+; Start of main program
+MAINPG:
+; Start new program
+; Get first & last frequency locations, # frequencies and set CURRFLOC=FRSTFLOC
+          MOV	A,#PROG1-1	; Reference PROG
+	  ADD	A,PROGNUM	; Add program # to -> desired PROGx
+	  MOV	R0,A
+	  MOV	A,@R0		; Get program header location #
+	  INC	A		; Add 1 to get first frequency location #
+	  MOV	FRSTFLOC,A      ; Byte loc for small or word for large found
+	  INC	R0		; -> to next program location #
+	  MOV	A,@R0
+	  DEC	A		; Subtract 1 to get last frequency location #
+	  MOV	LASTFLOC,A      ; Byte loc for small or word for large found
+	  CLR	C
+	  SUBB  A,FRSTFLOC
+	  INC	A
+	  MOV	NUMFREQ,A	; Number of frequencies = last - first + 1
+                                ;  or number of words for large format
+	  MOV	CURRFLOC,FRSTFLOC ; Set current frequency location # = first
+; Get program header info
+	  JB    SMALLFMT,SMHEAD
+LGHEAD:   DEC	R0		; -> to desired PROGx
+	  MOV	A,@R0
+	  MOV	R1,A
+	  CALL	NVREAD1W	; Read NVMEM word with header info
+	  MOV	R0,#NVBUF2	; Get LS byte
+	  MOV	A,@R0		
+	  AJMP  CINF
+
+; Small format uses byte locations (2 * word locations)
+SMHEAD:	  DEC	R0		; -> to desired PROGx
+	  MOV	A,@R0
+	  CLR	C
+	  RRC	A		; /2 to get NVMEM word # with C -> LS or MS byt
+	  MOV	R1,A
+	  MOV	MSFLAG,C	; MSFLAG=0 if LS, =1 if MS byte
+	  CALL	NVREAD1W	; Read NVMEM word with header info
+	  MOV	R0,#NVBUF2	; Assume LS byte
+	  JNB	MSFLAG,$+4	; J if LS byte
+	  INC	R0		; -> to MS byte
+	  MOV	A,@R0		; Get selected byte
+
+CINF:	  ANL	A,#0FH          ; Header LS nibble
+          CLR   INFINTYF
+	  CJNE	A,#0FH,$+5
+	  SETB  INFINTYF	; Set for infinite dwell time if DWELLIND=15
+	  MOV	DWELLIND,A	; Dwell time index in LS nibble
+	  MOV	A,@R0
+	  SWAP	A
+	  ANL	A,#07H
+	  CLR	CONTINF
+	  CJNE	A,#07,GETGOI
+	  SETB	CONTINF		; Set for continuous on if OFFONIND=7
+          SETB  OFFONF		; Set OFFONF on for continuous operation
+GETGOI:   MOV	OFFONIND,A	; Off/on time index in MS nibble (3 LS bits)
+; Get table values corresponding to DWELLIND & OFFONIND & put in RB 3 locations
+	  MOV	DPTR,#DWELLTBL
+	  MOV	A,DWELLIND	; 0 to 15
+	  CLR	C	
+	  RLC	A		; Mult DWELLIND-4 by 2 cause 2 table bytes
+                                ;    per index.
+	  MOV	R0,A		; Save 2*index
+	  MOVC  A,@A+DPTR	; Read table
+	  INC	A		; Cause 1st update is DJNZ
+	  MOV	LSDWELL,A	; Store LS DWELL count in LSDWELL
+	  MOV	14H,A		; Also store in current counter, R4 RB2
+	  INC	R0		; Next table index
+	  MOV	A,R0
+	  MOVC	A,@A+DPTR	; Read table
+	  INC	A		; Cause 1st update is DJNZ
+	  MOV	MSDWELL,A	; Store MS DWELL count in MSDWELL
+	  MOV	15H,A		; Also store in current counter, R5 RB2
+	  MOV	DPTR,#OFFONTBL	; Point to OFFONTBL
+	  MOV	A,OFFONIND	; Get OFF/ON index
+	  MOVC	A,@A+DPTR	; Read table
+	  MOV	OFFONTIM,A	; Store OFFON time count in OFFONTIM
+	  MOV	16H,A		; Also store in current counter, R6 RB2
+	  JB	SMALLFMT,MAINLUP
+; Only for large format
+          MOV	R0,#NVBUF3      ; Header MS byte
+	  MOV	A,@R0
+	  JB	ACC.6,JMAINPSW  ; J if SCAN mode
+	  CLR   MSFLAG          ; STEP mode. Large format meaning is point to
+                                ;  low or high byte for freq.
+; Main loop
+MAINLUP:  JB	SMALLFMT,SMMLUP
+LGMLUP:   MOV	A,CURRFLOC	; Get current frequency location #
+	  MOV	R1,A	        ; NVMEM word # in R1
+	  CALL  NVREAD1W	; Read NVMEM word
+	  MOV	R0,#NVBUF2	; Assume LS byte
+	  JNB	MSFLAG,$+4	; J if LS byte
+	  INC	R0		; -> NVMEM3
+	  MOV	A,@R0		; Get selected byte
+	  CJNE	A,#7FH,$+5      ; Is selected byte fill byte (7FH) ?
+	  AJMP  STRTCYC         ;   Yes, so re-start
+	  MOV	R1,A		; This is location address of frequency
+	  CALL	NVREAD1W	; Get binary value of freq
+; **** PUT TEST FOR MIN & MAX FREQ LIMITS HERE
+
+	  MOV	R0,#NVBUF4	; NVBUF4=0
+	  MOV	R1,#Z9
+	  CALL	COPY3B		; Copy NVBUF4:2 to Z9:7 for BINBCD
+	  CALL	BINBCD		; Convert binary freq value to BCD
+	  CALL	BCDCHR		; Convert to 7-segment code
+	  CALL	GETPARMS	; Get parameters
+	  MOV	DPTR,#JREF	; DPTR used in Freq Interrupt
+	  CLR	TF0		; Dont interrupt on old overflow
+	  SETB  ET0		; Enable Freq Interrupt
+	  JNB	ENDF,$		; Wait to end of dwell time
+	  CLR	ENDF		; Acknowledge & reset flag
+	  CPL	MSFLAG
+	  JB	MSFLAG,MAINLUP  ; J if next is high byte and use same location
+	  INC	CURRFLOC	; Next frequency location
+	  MOV	A,CURRFLOC
+	  DEC	A		; Compare if CURRFLOC > LASTFLOC 
+	  CJNE	A,LASTFLOC,$+3  
+	  JC	MAINLUP         ; J if CURRFLOC - 1 < LASTFLOC
+STRTCYC:  MOV	CURRFLOC,FRSTFLOC ; CURRFLOC > LASTFLOC so set = FRSTFLOC
+	  CLR   MSFLAG          ; Start with low byte again
+          AJMP	MAINLUP
+
+JMAINPSW: AJMP  MAINPGSW
+
+SMMLUP:	  MOV	A,CURRFLOC	; Get current frequency location #
+	  CLR	C
+	  RRC	A
+	  MOV	MSFLAG,C	; /2 and put odd or even in MSFLAG
+	  MOV	R1,A	        ; NVMEM word # in R1
+	  CALL  NVREAD1W	; Read NVMEM word
+	  MOV	R0,#NVBUF2	; Assume LS byte
+	  JNB	MSFLAG,$+4	; J if LS byte
+	  INC	R0		; -> NVMEM3
+	  MOV	A,@R0		; Get selected byte
+	  JB	ACC.6,MAINPGSW  ; J if FRSTFLOC has bit 6=1 for sweep mode.
+	  MOV	R1,A		; This is location address of frequency
+	  CALL	NVREAD1W	; Get binary value of freq
+; **** PUT TEST FOR MIN & MAX FREQ LIMITS HERE
+
+	  MOV	R0,#NVBUF4	; NVBUF4=0
+	  MOV	R1,#Z9
+	  CALL	COPY3B		; Copy NVBUF4:2 to Z9:7 for BINBCD
+	  CALL	BINBCD		; Convert binary freq value to BCD
+	  CALL	BCDCHR		; Convert to 7-segment code
+	  CALL	GETPARMS	; Get parameters
+	  MOV	DPTR,#JREF	; DPTR used in Freq Interrupt
+	  CLR	TF0		; Dont interrupt on old overflow
+	  SETB  ET0		; Enable Freq Interrupt
+	  JNB	ENDF,$		; Wait to end of dwell time
+	  CLR	ENDF		; Acknowledge & reset flag
+	  INC	CURRFLOC	; Next frequency location
+	  MOV	A,CURRFLOC
+	  DEC	A		; Compare if CURRFLOC = LASTFLOC + 1
+	  CJNE	A,LASTFLOC,$+6  ; J if CURRFLOC <= LASTFLOC
+	  MOV	CURRFLOC,FRSTFLOC ; CURRFLOC > LASTFLOC so set = FRSTFLOC
+	  AJMP	MAINLUP
+
+; Main sweep program
+MAINPGSW: JB    SMALLFMT,SMMPSW                                 
+LGMPSW:	  MOV	R1,FRSTFLOC
+	  CALL	NVREAD1W
+	  MOV	R1,NVBUF2 
+	  CALL	NVREAD1W	; Get binary value of freq
+          MOV	MINFREQ2,NVBUF3 ; FRSTLOC contains min freq
+          MOV	MINFREQ1,NVBUF2
+	  MOV	R1,LASTFLOC
+	  CALL  NVREAD1W	; Read NVMEM word
+	  MOV	R1,NVBUF3	; Assume LS byte
+          AJMP  SWCOM
+
+SMMPSW:	  ANL	A,#3FH		; Mask off bit 6 sweep flag of first freq
+	  MOV	R1,A		; This is location address of frequency
+	  CALL	NVREAD1W	; Get binary value of freq
+          MOV	MINFREQ2,NVBUF3 ; FRSTLOC contains min freq
+          MOV	MINFREQ1,NVBUF2
+	  MOV	A,LASTFLOC
+	  CLR	C
+	  RRC	A
+	  MOV	MSFLAG,C	; /2 and put odd or even in MSFLAG
+	  MOV	R1,A	        ; NVMEM word # in R1
+	  CALL  NVREAD1W	; Read NVMEM word
+	  MOV	R0,#NVBUF2	; Assume LS byte
+	  JNB	MSFLAG,$+4	; J if LS byte
+	  INC	R0		; -> NVMEM3
+	  MOV	A,@R0		; Get selected byte
+	  ANL	A,#3FH		; Shouldn't be needed cause bit 6 only on 1st F
+	  MOV	R1,A		; This is location address of frequency
+
+SWCOM:	  CALL	NVREAD1W	; Get binary value of freq
+          MOV	MAXFREQ2,NVBUF3 ; LASTLOC contains max freq
+          MOV	MAXFREQ1,NVBUF2
+          MOV	CURFREQ2,MINFREQ2
+          MOV	CURFREQ1,MINFREQ1
+SMAINLUP: MOV	Z8,CURFREQ2
+          MOV	Z7,CURFREQ1
+          MOV	Z9,#0
+	  CALL	BINBCD
+	  CALL	BCDCHR
+	  MOV	Z2,CURFREQ2
+	  MOV	Z1,CURFREQ1
+	  ACALL GETPARM1
+          MOV	DPTR,#JREF	; DPTR used in Freq Interrupt
+	  CLR	TF0		; Dont interrupt on old overflow
+	  SETB  ET0		; Enable Freq Interrupt
+; INC current freq routine goes here to find next freq while waiting
+; Change from INC F to DEC N at 04 00 (F=1024)
+; Determine which method here
+	  MOV	A,CURFREQ2
+	  ANL	A,#0FCH
+	  JNZ	DECN		; J if Freq > 03 FF (1023) and use DEC N method
+	  MOV	R0,#CURFREQ1
+	  CALL	INC2BY		; INC F
+	  AJMP  TESTMAX		; Is new Freq > Max Freq ?
+DECN:     MOV	Z2,CURFREQ2
+ 	  MOV	Z1,CURFREQ1
+	  CALL	DIVIDE1M	; Z5:4= Full period = 1000000/CURFREQ2:1
+	  MOV	R0,#Z3
+	  CALL  ROUND3
+	  DEC   Z4		; Freq > 1023 so DEC period N in Z5:4
+	  MOV	A,Z4
+	  CJNE	A,#0FFH,$+5
+	  DEC	Z5
+	  MOV	Z2,Z5
+	  MOV	Z1,Z4
+	  CALL	DIVIDE1M	; Convert back to Freq, 1000000/New Period
+	  MOV	R0,#Z3
+	  CALL	ROUND3
+	  MOV   CURFREQ2,Z5
+	  MOV	CURFREQ1,Z4
+
+; Compare CURFREQ to MAXFREQ
+;    If <= do nothing
+;    If > set CURFREQ to MINFREQ
+; After this is working, change from sawtooth sweep to triangular sweep
+TESTMAX:  MOV	R0,#CURFREQ1
+          MOV	R1,#MAXFREQ1
+	  CALL	CMPCC2	
+	  JNC	WAITHERE	; J if new CURFREQ2:1<= MAXFREQ2:1
+	  MOV	CURFREQ2,MINFREQ2 ;   Else if not replace
+	  MOV	CURFREQ1,MINFREQ1
+WAITHERE: JNB	ENDF,$		; Wait to end of dwell time
+	  CLR	ENDF		; Acknowledge & reset flag
+	  AJMP 	SMAINLUP
+
+; GETPARMS subroutine
+GETPARMS:
+; Find number of uS in period by dividing 1000000 uS by freq in NVBUF3:2
+	  MOV	Z2,NVBUF3
+	  MOV	Z1,NVBUF2	; Z2:1=FREQ
+GETPARM1:             	
+	  CALL  DIVIDE1M	; Z6:4=1,000,000. # uS in period = Z6:3 / Z2:1
+				; Result in Z6:4
+	  MOV	R0,#Z3
+	  CALL  ROUND3		; Round Z3 into Z6:4
+          CLR	C
+	  MOV	A,Z6		; 1000000/8 (lowest freq) = 01 E8 48 (Z6:4)
+	  RRC	A		; Z6 can only be 0 or 1. Put this into carry
+          MOV	Z6,A
+	  MOV	A,Z5
+	  RRC	A
+	  MOV	Z5,A
+	  MOV	A,Z4
+	  RRC	A
+	  MOV	Z4,A		; Half period Z5:4 = Z5:4/2
+	  MOV	OPFLAG,C	; If full period is odd, negative half is +1
+
+	  MOV	Z1,#197		; Put divisor in Z1
+	  MOV	Z3,Z4
+          MOV	Z4,Z5
+	  MOV	Z5,Z6
+	  MOV	A,Z4
+          ORL	A,Z5
+	  JNZ	DIVIDEND	; J and divide if half period > 255
+	  MOV	A,Z3
+	  JB	ACC.7,DIVIDEND	; J and divide if half period > 127
+; Half period < 128  uS so dont bother dividing to get integral # + remainder
+	  MOV	NDA,#01		; Only remainder forms half period interval
+	  AJMP  RB3R4
+DIVIDEND: MOV	R0,#Z8 	
+	  MOV	R1,#3 
+	  CALL	ZANYB		; Zero Z8:6
+	  MOV	Z2,A		; Zero Z2
+	  CALL	DIVIDE 		; Divide 2 bytes by 1 byte using 4 by 2 routine
+          MOV	MDA,Z4
+	  INC	MDA
+	  MOV	A,Z7 		; Remainder
+	  ADD	A,#206		; Is remainder >= 50 ?
+	  JC    ENDGETP         ; J if yes
+	  ADD	A,#197 		; No. Add divisor 197 to remainder and
+	  DEC   Z3       	;   reduce # of integral divisions by 1   
+ENDGETP:  MOV	NDA,Z3		; DA = integral # times divisor divides dividnd
+	  INC	NDA		; Add 1 for remainder
+          ADD	A,#50		; Restore remainder
+RB3R4:    CPL	A		; CPL because TL0 is up-counter
+          ADD	A,#25           ; Added for < 10 Hz
+;	  ADD	A,#23		; 23 uS from TL0 overflow to its update
+	  MOV	11H,A		; Put CPL in R1 RB 2, corresponds to remainder
+	  MOV	10H,#51H	; Put CPL of divisor 197 plus 23 in RB2:R0
+	  RET			;   (23 uS from TL0 overflow to its update)
+
+
+; Command W (57) 
+MAINIDLE: AJMP  MAINIDLE
+
+NVPROGNO: INC	PROGNUM
+	  MOV	A,PROGNUM
+	  CJNE	A,PROGLIM,NEWPROG ; PROGLIM 1 more than # of active programs
+POENTRY:  MOV	PROGNUM,#1
+NEWPROG:  MOV	DPTR,#DISDIG
+          MOV   CHAR4,#0FFH	; Display blank
+	  MOV	CHAR3,#08CH	; Display "P"  
+; This binary to BCD conversion limited to a maximum Program number of 19.
+          MOV	A,PROGNUM	; Get binary program #
+	  MOV	R0,#0F9H	; Assume "1" for digit 2
+	  ADD	A,#246		; Is program # > 9 ?
+	  JC	SETDIG1		; J if yes.  ACC = Digit 1
+	  MOV	R0,#0FFH	;   No. Digit 2 = 0, display blank
+	  ADD	A,#10		; Restore Digit 1 value
+SETDIG1:  MOVC	A,@A+DPTR	; Get 7-seg for Digit 1
+	  MOV	CHAR1,A
+	  MOV	CHAR2,R0	; Digit 2
+	  JNB	STARTSWF,$
+	  CLR	STARTSWF
+	  AJMP  MAINPG
+
+; LS,MS bytes in that order
+DWELLTBL: DB    004H,000H,00CH,000H	      ;  .2, .6  S     (0,1)
+          DB    018H,000H,03CH,000H           ; 1.2,3    S     (2,3)  
+	  DB    0C8H,000H,090H,001H,058H,002H ; 10,20,30 S     (4,5,6)
+          DB    084H,003H,0B0H,004H,008H,007H ; 45,60,90 S     (7,8,9)
+	  DB    060H,009H,010H,00EH,070H,017H ; 120,180,300 S  (10,11,12)
+          DB    0E0H,02EH,0C0H,05DH,000H,000H ; 600,1200,INF S (13,14,15)
+
+OFFONTBL: DB    002H,003H,006H,00CH ; .1,.15,.3,.6 S     (0,1,2,3)
+          DB    014H,028H,050H,000H ; 1,2,4,CONTINUOUS S  (4,5,6,7)
+
+          NOP
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  NOP
+	  NOP
+	  JMP   PWROFF

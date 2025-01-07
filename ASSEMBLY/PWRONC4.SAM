@@ -1,0 +1,302 @@
+;POWER ON RESET
+RESETSUB: CLR   GATEOUT		; Set output to zero
+          CLR   EPSEL           ; Deselect NVMEM chip select
+	  CLR	EA		; Disable all interrupts
+	  SETB  TRISTATE	; Disable display segments
+          MOV   PSW,#0          ; Reset to Reg bank 0
+	  RET
+;Cold Reset & hardware entry reset
+CLDRESET: 
+;   Reset RAM, read NVMEM into RAM memory
+          MOV   SP,#SPS-1       ; Set stack pointer -1 from 1st pos (6FH)
+	  ACALL RESETSUB	; Initializing subroutine
+          CALL  EWDIS           ; Disable ERASE, WRITE 
+	  MOV	DPTR,#ZERORAM
+	  AJMP  CLRRETI2
+;ZERO RAM
+ZERORAM:  MOV   R0,#06FH        ; Prepare to zero RAM
+          CLR   A
+ZLOOP:    MOV   @R0,A
+          DJNZ  R0,ZLOOP
+          MOV   0BH,#03H        ; Set dig counter R3'=3
+
+          CLR   SK              ; Clear NV MEM clock signal
+	  CLR   ENDSENDF
+	  SETB	TMOUTF
+	  
+; Determine Highest Master Freq Location (HMFL) by starting at the 3F location
+; and checking for two consecutive bytes that have their bits 7 set.  Then
+; clear bit 7 of the second one and the result is the adder to 3F that gives
+; the HMFL value.  For the old programs, HMFL = 3F cause the 2 bytes are 8080.
+          MOV	R1,#40H         ; Start with 3F + 1
+          CLR   TEMPF           ; Bit 7 flag
+HMFLLUP:  CALL	NVREAD1W
+	  MOV	A,NVBUF2        ; LS byte
+          JNB	ACC.7,HM2CLR    ; J if not byte with bit 7 set
+	  JB	TEMPF,HMFLDONE  ; Done if previous byte had bit 7 set
+	  SETB  TEMPF
+          MOV	HMFL,A          ; Save potential 1st byte of 2 with bit 7=1
+	  AJMP  HM3GET
+HM2CLR:   CLR   TEMPF
+          MOV	HMFL,#0         ; Zero cause not 1st of 2
+HM3GET:   MOV	A,NVBUF3
+	  JNB	ACC.7,HM3CLR    ; J if not byte with bit 7 set
+          JB    TEMPF,HMFLDONE  ; Done if previous byte had bit 7 set
+          SETB  TEMPF
+          MOV	HMFL,A          ; Save potential 1st byte of 2 with bit 7=1
+	  AJMP  NEXTGET
+HM3CLR:   CLR   TEMPF
+          MOV	HMFL,#0         ; Zero cause not 1st of 2
+NEXTGET:  INC	R1
+;### TEST
+	  CJNE	R1,#0FFH,$+5    
+	  AJMP  INITPARM        ; Must be blank EEPROM
+;####
+          AJMP  HMFLLUP
+HMFLDONE: CLR   ACC.7
+	  XCH   A,HMFL          ; 1st byte in A as read, 2nd byte-80H in HMFL
+	  CJNE	A,#93H,$+6      ; J if 1st byte of 2 <> 93H, must have been 80H
+	  MOV	HMFL,#0         ; Orig PFG100 file, so HMFL to end up = 3FH
+	  MOV	A,HMFL          ; 2nd byte - 80H
+          ADD	A,#3FH
+ 	  MOV	HMFL,A
+          CJNE	A,#40H,$+3
+	  MOV	SMALLFMT,C      ; Small format flag set if HMFL = 3FH
+
+; Find header locations
+
+	  MOV	PROGLIM,#0	; Initial value of program limit. Will end up
+				;   being 1 more than # of active programs
+	  MOV	R6,#0 		; Last location # + 1. Used to detect last
+				;   program # cause no freq's between prog #'s
+	  MOV 	R5,#PROG1	; Storage of initial program storage value
+
+; Small format & large format routines different
+          JNB   SMALLFMT, FINDLFH ; J if large format and find large format
+                                  ; headers.
+
+; Determine small format program header location #'s by reading NVMEM 64-127
+; and checking bit 7 of each byte.  Location #'s are 
+; 128-255 (2*Word # + 0 or 1)
+
+	  MOV	R1,#40H		; Address of highest master freq location + 1
+LOCATLUP: CALL	NVREAD1W	; Read 1 word of NVMEM 
+	  MOV	A,NVBUF2	; Get LS byte
+	  CLR	C		; If program header, even # cause LS byte
+	  JNB	ACC.7,LOCMS	; J if not header
+	  ACALL SHEADER		; Is header so form location # (2*word # + 0)
+	  JB	F0,INITPARM	; J if PROG10 header or no data per header
+LOCMS:    MOV   A,NVBUF3	; Get MS byte
+	  SETB	C		; If program header, odd # cause MS byte
+	  JNB	ACC.7,NEXTWRD	; J if not header
+	  ACALL SHEADER		; Is header so form location # (2*word # + 1)
+	  JB    F0,INITPARM	; J if PROG10 header, no more
+NEXTWRD:  INC	R1		; Next NVMEM word #
+	  CJNE	R1,#0,LOCATLUP  ; J and continue if not finished with NVMEM
+          AJMP  INITPARM
+
+; Find large format headers
+FINDLFH:  MOV	R1,HMFL         ; 40 or higher
+	  INC	R1              ; Point to 1st program header 
+LOCTHLUP: CALL	NVREAD1W	; Read 1 word of NVMEM 
+	  MOV	A,NVBUF2	; Get LS byte
+	  JNB	ACC.7,NEXTHWRD	; J if not header
+	  ACALL LHEADER		; Is header so put location # in program # 
+	  JB	F0,INITPARM	; J if PROG10 header or no data per header
+NEXTHWRD: INC	R1		; Next NVMEM word #
+	  CJNE	R1,#0,LOCTHLUP  ; J and continue if not finished with NVMEM
+
+INITPARM: MOV	PHASE,#4	; Initial value of PHASE
+	  MOV	DPTR,#JREF	; Initial value of DPTR
+	  MOV	0AH,#12		; Preset 50 MS timer, R2 RB1
+	  MOV	16H,#08		; Preset OFF/ON counter to arbitrary value
+				;   R6 RB2
+SETMOD:   MOV   TMOD,#23H       ; 0010 0011 timer 0=mode 3
+                                ; 	        timer 1=mode 2
+          MOV   TCON,#55H       ; TR0,TR1 control bits on, edge interrupts
+          MOV   IE,#098H        ; 1001 1000  ET0 is made true when ready
+	  MOV	IP,#02H		; TF0 Frequency interrupt high priority
+
+; Set serial mode
+          MOV   SCON,#50H       ; Serial mode 1
+	  MOV	TH1,#0F3H	; Set baud auto-reload value for 2403 baud
+				;   using 12 MHz clock
+
+	  SETB  TMOUTF		; Turn off timer **** MAY NOT BE USED
+	  CLR   TRISTATE 	; Enable segments
+
+          MOV	12H,#1	
+	  MOV	13H,#1
+
+	  LJMP  POENTRY         ; J to NVPROGNO routine & wait for START switch
+
+;**************************************************************************
+;                    POWER 0N SUBROUTINES
+;**************************************************************************
+
+SHEADER:  MOV	A,R1		; Get word #
+	  RLC	A		; Multiply by 2 and add 0 or 1
+	  CJNE	A,06H,$+3	; Is new loc # >= old loc # +2 (R6)
+	  JC 	ENDSHEAD	;   J if no. Done
+	  MOV	R0,05H		; R0 -> R5 marker (PROG1 to PROG5)
+	  MOV	@R0,A		; Put location # in PROG1 to PROG5
+	  INC	A
+	  INC	A		; Loc # + 2
+	  MOV	R6,A		; R6 = loc # + 2
+	  INC	PROGLIM		; Increment program limit
+	  INC	R5		; Next PROGX       
+	  CLR	F0		; Not done flag
+	  RET
+
+ENDSHEAD: SETB  F0		; Done flag
+	  RET
+
+LHEADER:  MOV	A,R1		; Get word #
+	  MOV	R0,05H		; R0 -> R5 program #
+	  MOV	@R0,A		; Put current location # in current program #
+	  INC	A		; Loc # + 1
+	  MOV	R6,A		; R6 = loc # + 1
+	  INC	PROGLIM		; Increment program limit
+	  INC	R5		; Next program #       
+; It is header, so NVBUF2 (LS byte) has bit 7 = 1
+          MOV	A,NVBUF3        ; If MS byte bit 7 = 1 then done
+	  JB    ACC.7,ENDLHEAD  ; J if done
+	  CLR	F0		; Not done flag
+	  RET
+
+ENDLHEAD: SETB  F0		; Done flag
+	  RET
+
+
+
+
+
+
+
+          NOP
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  CLR	EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR	EPSEL
+	  NOP
+	  NOP
+	  NOP
+	  AJMP  PWROFF

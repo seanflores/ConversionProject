@@ -1,0 +1,57 @@
+\MCS51\SAM\EXPLAIN
+
+                      EXPLANATION OF PROGRAM LISTING
+
+MASTER FREQUENCY LIST 
+  This is the master of frequencies from which each program (P1 to P9)may 
+  choose.  It is created for each file and may contain any frequency from
+  10 to 9999.  If the serial number of the instrument contains an "A"
+  prefix, it is capable of 18 programs (P1 to P18) and frequencies from
+  1 to 9999.  The following description applies to the "A" version also
+  but with the preceding enhancements.
+
+DESCRIPTION
+  Each of the 9 programs from P1 to P9 may be customized with the parameters
+  shown at the top of each programming box.  The format is:
+  
+          STEP/ DWELL /CONTINUOUS
+          SCAN         INTERRUPTED
+
+  STEP - The program steps through each frequency shown.
+  SCAN - The program starts with the first frequency and then advances to
+         a frequency one higher and continues until it reaches the last
+         frequency and then it starts over.  Only the first and last frequency
+         need be on the master frequency list.  At the higher frequencies, it
+         will skip some of the frequencies in order to go from the first to
+         the last in a reasonable amount of time.
+
+  DWELL - This value is the time in seconds that is spent on each frequency
+         before advancing to the next frequency.
+
+  CONTINUOUS (CONT) - This indicates that the output frequency is continuous.
+  INTERRUPTED (# SECONDS) - This is the time in seconds that output frequency
+         is ON and the equal length of time that the output frequency is OFF.
+         This time should be less than the Dwell time so that each frequency
+         will turn on and off a number of times while that frequency is
+         selected.
+
+ 
+EXAMPLES
+  1.  STEP/ 1.2/0.30
+        20  660  880  2720
+        26  666  885  5000
+        60  etc.
+      The program will produce 20 Hz for 1.2 seconds and the frequency will
+      be output for .3 seconds and then will be off (no output) for .3 seconds
+      and then will be output for .3 seconds etc.  At the end of the 1.2 
+      seconds dwell time, it will step to 26 Hz for 1.2 seconds with .3 
+      seconds ON and .3 seconds OFF.  This is continued for each frequency 
+      listed and then the program will repeat.
+
+  2.  SCAN/ 3/CONT
+         20
+        125
+      The program will start with 20 Hz and this frequency will be output 
+      continuously (no interruption) for 3 seconds and then the output will
+      change to 21 Hz and it will be output for 3 seconds and then 22 Hz etc.
+      After 125 Hz has been output for 3 seconds, the program will repeat.

@@ -1,0 +1,86 @@
+PFG100.DIF
+
+
+                   NEW PROGRAMMABLE FREQUENCY GENERATOR
+                              PFG100
+
+
+I.  Differences to CRF1000
+
+    A. Added a programmable feature.
+       From 1 to 5 selectable programs available to the user by pushing the
+       PROGRAM (black) pushbutton.  Each is identified by the display of
+       P 1  to  P 5.  Each program is run much like the CRF1000 using the
+       START (green) and HOLD (red) pushbuttons.  The parameters for each
+       program may be defined as follows:
+
+          1.  Dwell Time.  
+                The time each frequency stays on in seconds.  This is always
+                3 seconds for the CRF1000 but may be set to different values
+                for this new instrument.
+
+          2.  Interrupt Time.  
+                Each frequency, while is is on, is interrupted at a regular
+                rate.  The on time and equal off time in seconds can be set.
+                It is always 0.15 seconds for the CRF1000 but may be set to
+                different values for this new instrument.
+
+          3.  Frequencies.  
+                Each program contains a selected sequence of any number of
+                frequencies from 1 to 30 from a predetermined list of 30 
+                frequencies (the prototype is limited to 17 by the software).
+
+       The Dwell Time and Interrupt Time are the same for all frequencies
+       in a given program but may be set differently for other programs.
+
+    B.  Added a programming jack to the rear panel.  You can program the
+        instrument from your computer using the cable and software I furnish
+        you or I can program it for you to your specifications prior to
+        shipping.  It can be re-programmed any number of times.
+
+    C.  Changed to a more predominant push-button switch, color-coded for
+        easier user identification and added a PROGRAM select pushbutton.
+
+    D.  Added a bail that serves the double purpose of handle and tilt-
+        stand.
+
+    E.  Reduced the size of the display bezel to maintain maximum rigidity
+        of the plastic panel.
+
+    F.  Moved the power switch to the rear for reduced wiring complications
+        and greater user safety.
+
+    G.  Eliminated the 115V/230V power switch to reduce manufacturing cost
+        and user operating errors.  Instruments may be converted from one
+        voltage to the other but it requires removing the circuit board
+        from the case.  It is best that 230V units be ordered as needed.
+        No extra charge.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+II.  Production Instrument notes
+
+    A.  The production unit will have a dark gray front and rear plastic
+        panel instead of the black ones on the prototype.  This color 
+        combination matches current hi-tech equipment including computers
+        and computer keyboards.
+
+    B.  It will have a silk-screened panel similar to the CRF1000.
+
+    C.  It will have an output control marked 0 to 10 instead of 0 to 9.
+
+    D.  It will be capable of a total, for all 5 programs, of 50 frequency
+        selections instead of the 35 for the prototype.
+
+

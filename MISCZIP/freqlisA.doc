@@ -1,0 +1,204 @@
+                             DISCLAIMER
+The following list shows the PFG-100 program numbers to be used for each of
+the diseases to achieve the corresponding frequencies.  The list of diseases
+and frequencies is a compilation of lists published by John Crane and Mark 
+Simpson and absolutely no medical claims are made or implied by the 
+manufacturer of the PFG-100 for the effectiveness of these frequencies in 
+treating the listed diseases.  The PFG-100 was designed as an electronic
+test instrument and any medical use must be for experimental purposes only 
+under professional supervision.  The manufacturer assumes no liability when 
+the PFG-100 is used for medical purposes.   If this disclaimer is 
+unacceptable, please return the instrument for a full refund. 
+
+                            INSTRUCTIONS
+If there are no parentheses after the program number (e.g. P3), let the
+program go through all of its frequencies repeatedly.  If there are 
+parentheses shown after the program number (e.g. P1(440)) then stop the
+program on that frequency by pressing the HOLD button when that frequency
+shows on the display.  After about 3 to 5 minutes, press either the START
+button to proceed to another listed frequency or the PROGRAM button to 
+proceed to another program or the POWER ON-OFF switch to end the session. 
+
+K=1000 so 5K=5,000 and 10K=10,000 
+Due to the display limitation of 4 digits, a display of 9999 is actually 10K.
+
+Program numbers in brackets scan all frequencies between two end points and may be used as an alternative to, or in conjunction with, the step programs that step between frequencies.  E.g. [P8] scans all frequencies between 600 and 885 while P3 steps from 20 to 727 to 787 to 880 to 5K.
+
+PROGRAMS
+ P1 - Steps through every frequency in this listing
+ P2 - 20, 5K, 10K
+ P3 - 20, 727, 787, 880, 5K
+ P4 - 2000, 2008, 2100, 2120, 2127, 2130
+ P5 - 666, 690, 727, 2127
+ P6 - 440, 800, 880
+ P7 - Scans from 20 to 125
+ P8 - Scans from 600 to 885
+ P9 - Scans from 2000 to 2130
+P10 - 727, 784, 800, 880, 1550, 2720, 9999
+P11 - 727, 875, 880, 885
+P12 - 20, 408, 664, 727, 1000, 2008, 2127, 2720
+P13 - 20, 64, 96, 104, 112, 5000
+P14 - 20, 120, 465, 484, 660, 727, 787, 800, 804, 880, 2008, 2127
+P15 - 120, 424, 465, 664
+P16 - 304, 489, 727, 800, 880, 1488, 1500, 1550
+P17 - 664, 800, 1500, 1550, 1800, 1865
+P18 - 432, 484, 495, 610, 620, 690, 787, 864, 924, 3120, 6564
+
+                                                     STEP               SCAN
+DESCRIPTION                    FREQUENCIES           PROGRAM            PROGRAM
+Abdominal pain.................5K,10K                P2
+Acne...........................727,787,880,5K        P3                  [P8]
+Adenoids.......................20,440,727,787 880    P3,P6(440)          [P8]
+AIDS...........................727,787,880,2489,5K   P3,P1(2489)         [P8]
+Allergies......................5K                    P2(5K)
+Alopecia, Hair Loss............10K                   P2(10K)
+Anal Itch......................20,10K                P2
+Anemia.........................5K                    P2(5K)
+Aneurysm.......................20                    P2(20)
+Antiseptic.....................727,787,880           P3                  [P8]
+Aphthae Thrush.................727,787,880           P3                  [P8]
+Arteriosclerosis...............20,5K                 P2
+Arthritis......................727,784,800,880,1552, P10
+                               2720,10K  
+Asthma.........................727,787,880           P3                  [P8]
+Backache.......................10K                   P2(10K)
+Bites from insects.............727,880               P3                  [P8]
+Blood Pressure, high...........10K                   P2(10K)
+Blood Pressure, low............20                    P2(20)
+Boils..........................20,727,787,800,880,5K P3,P6(800)          [P8]
+Bronchitis.....................727,880               P3                  [P8]
+Bronco Pneumonia...............727,776,880           P3,P1(776)          [P8]
+Bubonic Plague.................20,500,5K             P2,P1(500)
+Bone regeneration..............2720                  P1(2720)
+Bones, broken..................2720,10K              P2(10K),P1(2720)
+Cancer, general................666,690,727,2127      P5                  [P8]
+Cancer, Breast.................2008,2127             P4                  [P9]
+Cancer, Carcinoma..............2120,2127,2130        P4                  [P9]
+Cancer, Sarcoma................2000,2008,2100        P4                  [P9]
+Candida........................450,465               P1(450,465)
+Cataract.......................5K,10K                P2(5K,10K)
+Catarrh, Mucous inflammation...20,880                P3
+Cerebral Palsy.................10K                   P2(10K)
+Chicken Pox....................20,727,787,880        P3                  [P8]
+Chronic Fatigue................120,424,464,664       P15
+Colds, head or chest...........727,787,880,5K        P3                  [P8]
+Colic..........................800                   P6(800)
+Colitis........................20,440,800,880,10K    P6,P2(10K)
+Conjunctivitis.................727,880               P3(727,880)         [P8]
+Constipation...................800                   P6(800)
+Cramps.........................26,10K                P1(26),P2(10K)
+Dandruff, scales...............5K                    P2(5K)
+Deafness.......................20,800,10K            P2,P6(800)
+Diabetes.......................10K                   P2(10K)
+Diarrhea and Dysentery.........5K                    P2(5K)
+Diptheria......................20,727,787,880        P3                  [P8]
+Drug Addiction.................20                    P2(20)
+Duodenal Ulcer.................727,880,10K           P3(727,880),P2(10K) [P8]
+Earache, ear discharge.........20,440,880,5K,10K     P2,P6(440,880)
+Ears, ringing..................20,5K                 P3(20,5K)
+E. Coli........................802                   P1(802)
+Eczema.........................5K                    P2(5K)
+Enlarged Glands................10K                   P2(10K)
+Epilepsy.......................20,120,465,484,660,   P14
+                               727,787,800,804,880,
+                               2008,2127,5k
+Eye problems...................20,787,5K,10K         P3,P2(10K)
+Fever..........................20,5K                 P2
+Flu (see Influenza)
+Food poisoning.................10K                   P2(10K)
+Gall Bladder...................20,5K                 P2
+Gall Stones....................20                    P2(20)
+Gangrene.......................20,727,787,880        P3                  [P8]
+German Measles.................727,787,880           P3                  [P8]
+Glaucoma.......................1600                  P1(1600)
+Goiter.........................20,5K                 P2
+Gonorrhea......................625,660               P1(625,660)
+Gout...........................20,10K                P2
+Grippe, Influenza..............727,787,880           P3                  [P8]
+Gums, bleeding or inflamed.....20,880,5K             P3
+Hair Loss......................20,800,5K,10K         P2,P6(800)
+Hay Fever......................5K                    P2(5K)
+Headaches......................20,10K                P2
+Heart disorders................20,81,162,5K          P2,P1(81,162)
+Hemorrhoids....................20,800,880            P6
+Hepatitis......................727,787,880           P3                  [P8]
+Hernia.........................5K                    P2(5K)
+Herpes.........................304,489,727,800,880,  P16
+                               1488,1500,1550
+Herpes Zoster, Shingles........664,800,1500,1550,    P17
+                               1800,1865
+Hives..........................1800                  P1(1800)
+Ileocolitis, colon inflammation800                   P6(800)
+Infantile Paralysis............1500,5K,10K           P2,P1(1500)
+Infections.....................20,727,787,880        P3                  [P8]
+Influenza......................20,727,787,800,880    P3,P6(800)          [P8]
+Insomnia.......................10K                   P2(10K)
+Jaundice.......................5K                    P2(5K)
+Joint inflammation.............10K                   P2(10K)
+Kidney.........................20,440,880,10K        P6,P2(10K)
+Knee...........................800                   P6(800)
+Laxative.......................800                   P6(800)
+Leukemia.......................2127                  P4(2127)
+Lupus Vulgaris.................800                   P6(800)
+Lyme Disease...................432,484,495,610,620   P18
+                               690,787,864,924,3120,
+                               6564
+Malaria........................20,727,787,880        P3                  [P8]
+Measles........................727,787,880           P3                  [P8]
+Meningitis.....................20,5K                 P2
+Migraine.......................20,5K                 P2
+Multiple Sclerosis.............5K                    P2(5K)
+Mumps..........................727,787,880           P3                  [P8]
+Muscular Dystrophy.............20,120,240,5K         P2,P1(120,240)
+Nausea.........................5K                    P2(5K)
+Neck...........................5K                    P2(5K)
+Neuralgia......................10K                   P2(10K)
+Neuritis, Nerve inflammation...10K                   P2(10K)
+Nose...........................20,440,880            P6
+Obesity........................10K                   P2(10K)
+Osteomyelitis..................5K                    P2(5K)
+Ovaries........................440,727,787,880       P3,P1(440)
+Pancreas.......................727,787,880           P3                  [P8]
+Parasites, worms...............20,60,81,120,125,     P6,P1(60,81,120,125) [P7]
+                               440,800                                         
+Peritonitis....................727,787,880           P3                  [P8]
+Pharyngitis....................727,787,880           P3                  [P8]
+Pleurisy.......................20,5K                 P2
+Pneumonia......................20,770,775,780,5K     P2,P1(770,775,780)
+Poliomyelitis..................1500,5K,10K           P2,P1(1500)
+Prostate.......................20,408,664,727,1000,  P12
+                               2008,2127,2720
+Psoriasis......................20,64,96,104,112,5K   P13
+Rabies.........................20,120                P1(20,120)          [P7]
+Rheumatism.....................10K                   P2(10K)
+Rheumatoid Arthritis...........10K                   P2(10K)
+Rhinitis.......................20,120                P1(20,120)          [P7]
+Rickets........................5K                    P2(5K)
+Ringworm.......................20,81,120             P1(20,81,120)       [P7]
+Scarlet Fever..................727,787,880           P3                  [P8]
+Sciatic nerve inflammation.....20,120                P1(20,120)          [P7]
+Scurvy.........................5K                    P2(5K)
+Shingles (see Herpes Zoster)
+Sinus..........................20,120,727,787        P3,P1(120)
+Smallpox.......................727,787,880           P3                  [P8]
+Staphylococcus infections......727,875,880,885       P11                 [P8]
+Streptococcus infections.......880                   P6(880)
+Streptothrix infections........727,730,780,784,787   P3,P1(730,780,784)  [P8]
+Stroke.........................20                    P2(20)
+Syphilis.......................20,120,600,625,650,   P1(20,120,600,625,650,600,
+                               600,660,700                             666,700)
+Tetanus........................20,400                P2(20),P1(400)
+Thalamus.......................20,5K                 P2
+Tonsillitis....................20,440,880            P6
+Toothache......................20,727,787,880,10K    P3,P2(10K)
+Trachoma, eye inflammation.....727,787,880           P3                  [P8]
+Tuberculosis...................20,800,802,804,1500,  P2(20),P1(800,802,804,
+                               1550,1600                        1500,1550,1600)
+Typhoid........................20,690,727,787,880,   P3,P1(690,1500,1570,
+                               1500,1570,1600,1865                   1600,1865)
+Ulcers.........................727,776,787,880       P3,P1(787)          [P8]
+Urethritis.....................660,727,787,880       P3,P1(660)          [P8]
+Warts..........................1550                  P1(1550)
+Whooping Cough.................727,787,880           P3                  [P8]
+Worms (see Parasites) 
+Yellow Fever...................20,10K                P2

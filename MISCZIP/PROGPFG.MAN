@@ -1,0 +1,910 @@
+
+
+
+                           PROGRAMMING MANUAL
+
+                                  for
+
+		      PFG-100 PROGRAMMING SOFTWARE
+                              VERSION 1.0
+                            PART NUMBER SP1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Publication Number SP1-1.0-1.0
+10-01-91
+
+COPYRIGHT
+(C) ACTIONCRAFT, 1991
+
+This document contains proprietary information that is protected by
+copyright.  No part of this document may be reproduced without the
+written consent of ACTIONCRAFT.
+
+The information furnished by ACTIONCRAFT in this publication is believed
+to be accurate and reliable.  However, no responsibility is assumed by
+ACTIONCRAFT for its use, nor for any consequential or other damages to
+any party resulting from its use, or the equipment that it accompanies.
+
+ACTIONCRAFT reserves the right to revise this publication and make
+changes to its content without notification, at any time.
+
+
+
+
+
+
+
+
+
+1.0  DESCRIPTION OF THE PFG-100 INSTRUMENT
+
+The Model PFG-100 Programmable Frequency Generator is a microcomputer-based,
+line-powered, square-wave generator with a range of 10 Hz to 9,999 Hz that 
+provides the user with a front panel selection of 1 to 9 Programmed
+sequences of frequencies.  Each frequency in the chosen sequence is 
+maintained on the output for a pre-selected time interval from 0.2 seconds
+to 20 minutes.  In addition, all frequencies in a given sequence are 
+pre-set either to be continuous or to be interrupted with equal on and off
+intervals from 0.1 to 4.0 seconds.  Two modes of sequencing are available
+for each of the 9 Programmed sequences.
+
+    STEP  MODE:  Each frequency in the sequence is pre-selected and the
+                 Program steps through each frequency in order and then
+                 repeats.
+
+    SCAN  MODE:  Only the lowest and highest frequencies of the desired
+                 sequence are pre-selected and the Program steps through
+                 all of the in-between frequencies using small incremental
+                 changes in frequency.  When the Program reaches the
+                 highest frequency, the scan begins again from the
+                 lowest frequency. For frequencies under 1024 Hz, the
+                 frequency increments are 1 Hz.  Above 1024 Hz, the
+                 frequency increments increase from 0.1% at 1024 Hz to
+                 1% at 9999 Hz.
+
+A four-digit LED readout provides a display of the current square-wave
+output frequency in Hertz (cycles per second).  The internal crystal-
+controlled microcomputer generates the frequencies automatically so no 
+manual frequency adjustment is required.  A manual OUTPUT level control
+provides adjustment of the output amplitude from 0 V to 20 V peak-to-peak
+(+-10 V peak).
+
+Three pushbutton switches marked START, HOLD and PRGM (Program) provide
+operational control by starting the sequence, holding the current frequency
+and selecting the desired Program.  After a Program number from 1 to 9 is
+selected, and the sequence is initiated with the START button, no further 
+operation of the controls is required, except possibly to adjust the output
+level.  The sequence repeats indefinitely, but may be interrupted at any 
+time by selecting another Program.
+
+The output signal leads may be accidentally shorted together without any
+damage to the instrument and the instrument will continue to function
+normally when the short is removed.  In addition, user safety is enhanced
+by conservative circuit design and special attention to component ratings
+and printed circuit board lead spacings that greatly minimize any danger of
+shock from the power line.
+
+The PFG-100 may be re-programmed any number of times from a computer 
+over a cable that plugs into the rear of the instrument.  This means
+that the instrument will not become obsolete when new and different
+frequencies become desirable.
+
+
+
+
+
+                                  (1)
+
+
+
+
+2.0  GENERAL PROGRAMMING DESCRIPTION
+
+The PFG-100 is programmed from an IBM-compatible computer, using the
+SP1 software, with up to 9 different sequences of frequencies.  The 
+instrument may be programmed by the factory, the distributor or the user.
+Once programmed, the data is retained in non-volatile memory.  Therefore, 
+the power can be turned off and the data will not be lost.  This is a
+special memory requiring no batteries.
+
+Programming of the PFG-100 is accomplished via the rear sub-miniature 
+phone jack.  A programming cable connects from the jack to a serial 
+(RS-232) port of an IBM PC/XT/AT computer or equivalent.  The software
+prompts the programmer via menus to enter the desired data for up to
+9 Programs.  When complete, the data is saved in a file that is stored
+on the computer disk.  Upon command, the software reads the data file
+and automatically converts the data to a string of characters which are 
+sent to the PFG-100 over the serial data cable, where they are stored in 
+memory.  The programming phase is then complete and the PFG-100 is ready 
+to use.  It may be re-programmed any number of times.
+
+Programming is performed in two parts.
+
+Part 1.
+
+    A Master list is created of all of the frequencies that are required
+    for each of the 9 Program selections.  This list must also include the
+    lowest and highest frequencies desired in each Scan mode Program.
+    This Master Frequency list has capacity for a total of 64 different
+    frequencies ranging from 10 Hz to 9,999 Hz.  Any integer values in
+    this range may be included.
+
+Part 2.
+
+    For each Program P1 to P9, a sub-list of frequencies plus three
+    parameters are selected.  The sub-list of frequencies is selected
+    from the Master Frequency list created in Part 1.  They may be
+    different frequencies for each Program or some may be common or all
+    may be common.  However, the sum total of the number of frequencies
+    in the sub-lists of P1 through P9 cannot exceed 118, even though
+    some may be common.
+
+    The three parameters to be chosen are (1) the mode, (2) the dwell
+    time, and (3) the interrupt time.
+
+          Mode    = two choices, Step or Scan.  
+
+                    In the Step mode, the Program sequences through the 
+                      selected sub-list of frequencies which may contain 
+                      any number of the Master list frequencies from 
+                      1 to all.  It then returns to the low frequency
+                      and repeats the sequence.  This continues as
+                      long as that Program is selected.
+                    
+                    In the Scan mode, the sub-list consists of two, and
+                      only two frequencies, the lowest and highest to 
+                      scan between.  The PFG-100 automatically sequences 
+                      from the low limit to the high limit using small 
+                      frequency increments.  It then returns to the low
+                      limit and repeats the scan.  This continues as
+                      long as that Program is selected. 
+                                  (2)
+
+
+
+      Dwell Time  = the length of time that a particular frequency is 
+                    being output before the PFG-100 advances to the next
+                    frequency.
+
+   Interrupt Time = the time that the particular frequency being output
+                    is on and the equal time that it is off.  This 
+                    gating of the frequency repeats continually during
+                    the Dwell Time.  Continuous operation without any
+                    interruption may also be selected.
+
+   The three parameters to be selected must be chosen from a factory
+   list of values and the parameter selection applies to all of the
+   frequencies in a given Program's sub-list.  However, a different 
+   set of parameters may be selected for each of the nine Programs from
+   P1 to P9. 
+
+   The factory list of values for the three parameters are:
+
+          Mode      Dwell Time       Interrupt Time
+          ----      ----------       --------------
+          Step       0.2 sec               0.10 sec
+          Scan       0.6                   0.15
+                     1.2                   0.3 
+                       3                   0.5 
+                      10                   1.0
+                      20                   2.0
+                      30                   4.0
+                      45                Continuous
+                      60
+                      90
+                     120
+                     180
+                     300
+                     600
+                    1200
+                 Infinite
+
+The instrument is capable of storing a total of 118 sub-list frequencies.
+This can be allotted in any manner between the 9 Program selections.  The
+following 5 examples illustrate the principle by listing an acceptable
+number of sub-list frequencies in each of the 9 Programs.
+
+Example P1 P2 P3 P4 P5 P6 P7 P8 P9	   Comments
+------- -- -- -- -- -- -- -- -- --   ---------------------------------------
+  #1    14 13 13 13 13 13 13 13 13   Exactly 118 sub-list frequencies
+  #2    40  2 40  2 34  0  0  0  0   Do not need to use all P1 through P9
+  #3    59 59  0  0  0  0  0  0  0   Same freq in P1 & P2 but diff parameters
+  #4    20 10 10 10  2  2  2  2  2   Not all 118 need be used.      
+  #5    20 10  0 10  0  0  0  0  0   P4 is not accessible to the user because
+                                       P3 is blank.  Programs terminate on
+                                       first blank sub-list.
+       
+The software allows the user to choose the frequencies, the Mode, the 
+Dwell Time and the Interrupt Time for each of 9 Programs to be stored in 
+the PFG-100.  After being selected, this total data for the 9 Programs is
+stored in a single file on the floppy disk for future use.  The user 
+chooses a name for the saved file that can be remembered at a later time.  
+File names can be from 1 to 8 letters or numbers but must start with a 
+letter (e.g. E1HELP9 ).  
+                                  (3)
+
+
+
+
+The software is used to: 
+  (1) create a new file as described above and store it on the floppy disk, 
+  (2) recall an old file, modify it and store it under the same name (or 
+        store it under a new name, leaving the old name and file intact 
+        for future use) and 
+  (3) selecting a file from those stored on the floppy disk and sending 
+        the data to the PFG-100 where it is stored for use.  The floppy 
+        disk has space for about a 100 files. 
+
+
+3.0 CONNECTING THE HARDWARE
+
+A cable is available as an option that provides the connection for transfer 
+of the data from the computer to the PFG-100.  One end of the cable contains 
+a miniature phone plug that plugs into the rear of the PFG-100.  The other 
+end of the cable contains either a 25-pin or a 9-pin Subminiature D 
+connector that plugs into one of the serial ports on the rear of the 
+computer.  If the serial port(s) have a different connector than is on the 
+cable, consider purchasing an adapter plug to mate the two together.  Be 
+sure to check the number of pins and the gender required of both of the 
+connectors on the adapter plug before purchasing.  Radio Shack is a good 
+source for adapter plugs.
+
+If the serial port(s) are already in use, consider unplugging one to allow
+sending data to the PFG100 and then replacing it when done.
+
+
+4.0 INITIATING THE SOFTWARE
+
+Turn on the computer in a normal manner.  Put the floppy disk in the floppy
+drive of the computer and select the drive by typing the drive letter 
+followed by a colon.  Typically, the floppy drive is the "A" drive and if
+so type "A:".  The computer should respond with the prompt 
+   A:>
+Type PFG100
+   A:>PFG100
+The software responds with the question
+   "Is the programming cable connected to COM(1) or COM(2) ? >"
+If you know which Serial I/O port the cable is connected to, type the 
+appropriate "1" or "2".  If you do not know the COM #, type "1" and select 
+(S) SEND FILE from the MAIN MENU and when the question "NAME OF FILE TO 
+SEND (CR TO CANCEL) ? >" appears on the screen, type "TEST1" to send a 
+test file to the PFG-100.  Look at the PFG-100 display while pushing 
+"Enter" at the end of typing the file name.  If the display goes blank for 
+an instant and then comes up with "P 1", COM 1 is correct.  If the display 
+does not go blank for an instant, then terminate the software program (see
+below) and start it again, this time responding with "2".  If the display
+goes blank and then "P 1" this time, then COM 2 is correct.  If not, 
+check the cable connections and repeat.  Once you have determined the 
+correct COM number, either 1 or 2, remember this number for future use and 
+remember also where the cable is connected to the computer.
+
+
+
+
+
+
+                                  (4)
+
+
+
+
+
+
+
+
+TERMINATING THE SOFTWARE PROGRAM 
+There are two methods to terminate the software program at any time.
+  (1) Return to the MAIN MENU and select (Q) QUIT.  This will terminate
+      the program in an orderly manner.
+  (2) While holding down the "Ctrl" key, press the "Break" key.  This
+      will cause an immediate termination of any program instruction in
+      process and the messages "*Break*" and "Hit any key to return to 
+      system" will appear.  Be careful when terminating the program with 
+      this method because any data being stored on disk or sent to the 
+      PFG-100 will be corrupted by the sudden termination.
+
+KEY PRESS NOTES
+These are some special notes relating to the use of the keyboard in
+connection with the programming software.
+
+  (1) Several of the prompts that ask for file names contain the following:
+           (CR TO CANCEL)
+      "CR" stands for Carriage Return and is a carry-over from typewriters.
+      The corresponding key on the computer keyboard is "Enter".  The
+      above statement means to hit "Enter" without typing any characters
+      to abort the present state of the program and return to the menu.  
+  (2) Menu responses require only 1 character so the software responds 
+      immediately when a key is pressed.  On the other hand, file names 
+      require from 1 to 8 characters, so the "Enter" key must be pressed
+      after typing in the name, to inform the software that the name is
+      complete. 
+  (3) The "Ctrl-Break" sequence described above in (2) of TERMINATING
+      THE SOFTWARE PROGRAM can be used if the computer locks up for any
+      reason, preventing the normal (Q) QUIT from being used in the MAIN
+      MENU. 
+
+
+5.0 MAIN MENU
+
+When the COM number has been entered, the MAIN MENU is displayed.  It
+requests a selection from the following:
+ 
+                        M A I N   M E N U
+                        -----------------
+
+                        (C) CREATE FILE
+                        (E) EDIT FILE
+                        (S) SEND FILE
+                        (P) PRINT FILE
+			(Q) QUIT    
+
+
+                        SELECTION ? > _
+
+
+The proper response is the appropriate letter C, E, S, P or Q.  A 
+description of each selection follows.
+
+
+
+
+                                  (5)
+
+
+
+
+
+
+
+
+
+(C) CREATE FILE   
+     This selection allows the user to start from scratch and build a
+     file containing data for up to 9 Programs.  This is done in two
+     parts as mentioned above in 2.0.  
+     
+     Part 1 is to create a Master Frequency list of all frequencies that 
+       will be used in the Programs 1-9.
+     Part 2 is to create up to 9 Programs by selecting a sub-list of
+       frequencies from the Master list and selecting the 3 desired
+       parameters.
+
+     When "C" is selected, the CREATE FILE MENU appears on the screen.
+     Section 6.0 CREATE FILE MENU explains the choices available which
+     are basically Part 1  CREATE MASTER FREQUENCY LIST
+               and Part 2  CREATE PROGRAM P1
+                                 to
+                           CREATE PROGRAM P9
+      
+     
+(E) EDIT FILE
+     
+     This selection causes a new screen to appear with the question "NAME
+     OF FILE TO EDIT (CR TO CANCEL) ? >".  If the file name entered has 
+     been saved previously on the floppy disk, a copy of it is brought into 
+     computer memory and the EDIT FILE MENU is displayed.  The data 
+     represents the prior selections just as they were saved under the file 
+     name.  There are now 3 courses of action.
+
+     (1)  Using the EDIT FILE MENU, you may merely view the file data to
+          see what selections that file name represents.  
+
+          When done viewing, return to the MAIN MENU.  That file still 
+          exists and no new files are created.
+
+     (2)  Using the EDIT FILE MENU, you may make changes to the file data.
+
+          When the formatted data appears in response to a Program number,
+          use the arrow direction keys for placement of the cursor
+          and then the "Enter" key to toggle selections off and on (see
+          7.0 EDIT FILE MENU).  When all of the formatted Program screens
+          have been changed the way you desire it, you can type "S" SAVE
+          FILE to save the data.  When it asks "NAME OF FILE TO SAVE DATA 
+          UNDER (CR TO CANCEL) ? >" you can respond with the old file name 
+          to replace the old file data with the changed file data.  It will 
+          caution you that a file with that name already exits and that the 
+          file data will be replaced with new data.  When it asks
+          "PROCEED (Y/N) ? >" you will respond "Y".
+
+     (3)  Using the EDIT FILE MENU, you may create a new file by making 
+          changes to a copy of an old file and saving under a new name.
+ 
+          This is the same as (2) except after typing "S" SAVE FILE, you 
+          can respond to "NAME OF FILE TO SAVE DATA UNDER ? > " with a new
+          file name which creates a new file and keeps the original data
+          under the old name.
+    
+
+                                  (6) 
+
+
+
+
+
+
+
+
+(S) SEND FILE 
+
+     This selection causes a new screen to appear with the question 
+     "NAME OF FILE TO SEND (CR TO CANCEL) ? > ".  Type in the name of the 
+     previously saved file that you want to send to the PFG-100.  Only 
+     files that have been saved can be sent to the PFG-100.  If the name
+     of a file is typed that has not been saved on disk, the comment
+     "FILE NOT FOUND" appears and then the above question is repeated.  
+     Another name may be tried or the "Enter" (CR) key hit without a name 
+     to cancel the request and return to the MAIN MENU.
+
+     If the file is found, its data is sent over the cable to the PFG-100.
+     Each file contains data for up to 9 Programs to be stored in the
+     PFG-100.  Data files are identified by name so they can be recalled 
+     at a future time and the same data loaded into the PFG100.  For 
+     example, "SAM1" and "SAM2" could be the names of two files, each with 
+     9 Programs.  "SAM1" could be sent to the PFG-100 and the instrument 
+     used for a period of time, and then "SAM2" could be sent to the 
+     PFG-100 and those 9 Programs used for a period of time.  Later, "SAM1" 
+     could be loaded again and this process repeated over and over.
+
+
+(P) PRINT FILE
+     This selection causes a new screen to appear with the question,
+"NAME OF FILE TO BE PRINTED (CR TO CANCEL) ? > ".  If there is a printer
+connected to the computer, type in the name of the file to be printed.  
+The file contents will be printed and can be put into a notebook for 
+future reference.  Only files that have been saved to disk can be printed.  
+The Master Frequency list appears on the left, extending down from the top 
+2/3 of the sheet.  The 3 Program parameters, Mode, Dwell time and Interrupt 
+time appear in that order but unlabeled just below the Program #x 
+underline.  The sub-lists of frequencies are arranged in 3 groups of 3 
+Programs per group.  The data extends completely over an 8 1/2 X 11 
+sheet so the top margin must be carefully adjusted. 
+
+(Q) QUIT  
+
+     This selection causes the software to exit back to the computer's
+     operating system.
+
+6.0 CREATE FILE MENU
+     
+     When "C" is selected from the MAIN MENU, this CREATE FILE MENU is
+     displayed from which formatted screens are selected to enter the
+     main frequency list or Programs 1-9.  When all of the data has been 
+     entered for the complete file, it may be saved by hitting (S) SAVE
+     FILE while in the CREATE FILE MENU.
+
+
+
+
+
+
+
+
+
+
+                                  (7)
+
+
+
+
+
+
+                      CREATE FILE MENU
+                      ----------------
+          
+                      (M) CREATE MASTER FREQUENCY LIST
+                      (1) CREATE PROGRAM P1
+                      (2) CREATE PROGRAM P2
+                      (3) CREATE PROGRAM P3
+                      (4) CREATE PROGRAM P4
+                      (5) CREATE PROGRAM P5
+                      (6) CREATE PROGRAM P6
+                      (7) CREATE PROGRAM P7
+                      (8) CREATE PROGRAM P8
+                      (9) CREATE PROGRAM P9
+                      (S) SAVE FILE
+                      (R) RETURN TO MAIN MENU
+
+                      SELECTION ? > _
+
+
+HIT 'Z' TO ZERO DATA, 'R' TO RETURN TO MENU
+
+
+(M) CREATE MASTER FREQUENCY LIST
+
+     This selection causes a formatted screen to appear that initially
+     contains "????" to indicate each frequency entry location.  There are 
+     a total of 64 frequency locations divided into 4 columns of 16 rows 
+     each.  Enter all of the frequencies in this Master list that will be 
+     selected in each of the 9 Program's sub-list of frequencies.  If you 
+     don't include a desired frequency in the Master list at this stage, 
+     you will not be able to select it later when creating the Programs 
+     1-9.  A particular frequency need be entered only once on the Master 
+     list, even though it is used in all of the 9 Program's sub-lists. 
+
+     The "????" at the top of the first column will be flashing to indicate
+     that this is the active location for a frequency entry.  Type in the 
+     first frequency using a value from 10 to 9999 and then hit "Enter".
+     The value will appear in reverse video (dark numbers on a white back-
+     ground) to indicate that this value has been selected.  The second
+     location in the first column will be flashing for entry of the second
+     value. Enter the second value in the same way. Proceed until all of
+     the desired frequencies have been entered.  The software does not 
+     allow a frequency value less than 10 or greater than 9999 to be 
+     entered.
+
+     Any location in the 4 columns may be selected for entry by using
+     the 4 arrow keys on the right of the keyboard.  The current location
+     is always identified by the flashing characters.  Pushing the right
+     arrow key when the location is in the right-hand column causes the
+     location to wrap-around to the left-hand column.  Likewise, the left 
+     arrow key causes wrap-around in the other direction.  The up and
+     down arrow keys also cause wrap-around in the vertical directions.
+
+
+
+
+
+
+
+                                  (8)
+
+
+
+
+
+
+     Any entry may be de-selected by locating it with the arrow keys
+     and then pushing "Enter".  That location then turns from reverse
+     video to normal video.  It will not be included in the final frequency
+     list even though the value still remains.  Only those values in 
+     reverse video are accepted as selected values.  That value may be 
+     selected again by locating it with the arrow keys and pushing "Enter".  
+     That location then reverts back to reverse video.  Pushing "Enter" at 
+     a given location always toggles that location between selected and not
+     selected or between not selected and selected as evidenced by the
+     toggling of the normal and reverse video.
+
+     Once all of the frequencies have been entered, type "R" to return
+     to the CREATE FILE MENU.  The software will read all of the selected
+     frequencies from the screen, sort them in numerical order, and put
+     them in temporary memory.  If "M" is typed again, the formatted
+     Master Frequency list screen appears again and all of the
+     previously created frequencies are printed but in numerical
+     order.  A frequency can now be deleted from the list by selecting 
+     it and hitting "Enter" or a frequency can be added by locating
+     any "????" and typing in the value and hitting "Enter".  A frequency
+     can be changed by locating it and typing over its value with a
+     new value and hitting "Enter".
+
+(1) CREATE PROGRAM P1  (typical of all 9)
+
+     This selection causes the Program formatted screen to appear with 
+     the Master Frequency list, and 3 columns containing the factory-
+     determined list of parameter values for the Mode, the Dwell Time and
+     the Interrupt Time.  Only one selection is made for the Mode, the 
+     Dwell Time and the Interrupt Time but any number of Frequencies may 
+     be selected from the Master Frequency list from 1 to all.
+
+     SELECTING THE SUB-LIST FREQUENCIES
+     ------------------------------------
+     The Master Frequency list is reproduced in the Program formatted
+     screen in the same four columns as the Master Frequency list 
+     formatted screen except when a particular Program number screen is 
+     selected for the first time, none of the frequencies are selected.
+     Using the arrow keys, locate each frequency in the list that is 
+     desired for the Program number being created and hit the "Enter" key
+     to select it.  The frequency will go to reverse video to indicate
+     that it was selected.  To de-select any frequency that was mistakenly
+     selected, locate it and hit the "Enter" key again which toggles it
+     back from reverse video to normal video.  
+
+     Return to a particular Program number formatted screen at any time
+     and the reproduced Master Frequency list will contain the previously
+     selected sub-list frequencies as indicated by the reverse video of
+     those values.  New frequencies may be selected or selected frequencies
+     may be de-selected from the sub-list by toggling their
+     respective locations with the "Enter" key.  However, a frequency
+     value in this reproduced Master Frequency list cannot be changed
+     to a new value without returning to the Master Frequency list 
+     formatted screen with the "M" selection of the CREATE FILE MENU.  
+
+
+
+                                  (9)
+
+
+
+
+
+
+
+
+  NOTE OF CAUTION - If the Master Frequency list is altered by adding or 
+     deleting frequencies after some or all of the sub-list frequencies 
+     have been selected in the Program formatted screens, it will be 
+     necessary to revise the sub-list selections because the position of 
+     the frequencies in the Master list will have shifted from their 
+     original positions.  For this reason, it is important that the 
+     original Master list of frequencies be carefully chosen so that no 
+     changes will be required after the sub-lists are selected. If this 
+     does happen, it may be easier to zero the sub-list of frequency 
+     selections by using the "Z" command to zero or blank the previous 
+     selections and then re-select from scratch.
+
+     SELECTING THE PARAMETERS
+     ------------------------
+     When the frequency sub-list is selected, use the arrow keys to locate
+     the 3 parameter values.  These parameter values remain the same for
+     all of the frequencies in the Program's sub-list.  However, a 
+     different set of parameters may be chosen for each of the 9 Programs.  
+     Two Programs could have an identical sub-list of frequencies and a
+     different set of parameters.
+
+     There are only 2 choices for Mode: Step and Scan.  Locate the desired 
+     Mode and hit "Enter".  If Scan is selected there must be exactly 2 
+     frequencies selected in the sub-list, a low frequency and a high 
+     frequency.  An error message will warn if other than 2 frequencies 
+     are selected, so use the arrow keys to return to the sub-list and add 
+     or remove selected frequencies until there is exactly 2.
+
+     There are 15 values of the Dwell Time from .2 seconds to 20 minutes
+     to Infinity from which one, and only one, must be selected.  The Dwell 
+     Time is the length of time each frequency is on the output (and 
+     display) before advancing to the next frequency.  
+
+     There are 7 values of the Interrupt Time from .1 seconds to 4 seconds
+     to Continuous from which one, and only one, must be selected.  The 
+     Interrupt Time is the length of time each frequency being output is
+     turned on and the equal time that it is turned off repeatedly during
+     its Dwell Time.  It is on without interruption if Continuous is
+     selected.  
+
+     When the frequency sub-list and 3 parameters have been selected on
+     the Program formatted screen, either hit "R" to return to the
+     CREATE FILE MENU or hit "A" to advance to the next Program number
+     and its formatted screen.  If more than one value for any parameter 
+     is selected, an error message appears and the excess must be 
+     de-selected before returning or advancing.  If no values are selected
+     for any parameter, the default values are assigned with no error
+     message.  The default values are indicated on the formatted screen
+     with an "*".    
+
+     If there are no frequencies selected in a Program's sub-list, that
+     Program is considered blank.  Starting with Program 1, the PFG-100
+     will only recognize Programs until the first blank Program is
+     encountered.  It then returns to Program 1.  Any non-blank Programs
+     past the first blank Program will not be accessible.
+ 
+
+
+                                  (10)
+
+
+
+
+
+     Since none of the data is saved on the floppy disk until you are
+     completely done, you may go back and forth between columns using
+     the left and right arrow keys, and up and down any given column
+     using the up and down arrow keys, selecting and de-selecting entries
+     with the "Enter" key until the formatted screen represents the
+     Programs just the way you want them.  You can also re-enter Programs
+     to view or make changes as many times as desired.
+
+     When the selections for the Master Frequency list and all of the 
+     desired Programs have been completed, return to the CREATE FILE MENU 
+     and hit "S" to save the selections in a file.
+
+(S) SAVE FILE
+
+     Select this and the software will formulate all of the selection
+     data in temporary memory and combine it into one file.  It will
+     summarize and display the total number of sub-list frequencies
+     and the number of active Programs as shown in the following example:
+       "THE TOTAL NUMBER OF SUB-LIST FREQUENCIES (LIMIT=118) ARE 73"
+       "ACTIVE PROGRAMS ARE P1 TO P4 BECAUSE P5 IS EMPTY"
+     The program will then ask 
+       "NAME OF FILE TO SAVE DATA UNDER (CR TO CANCEL) ? ".
+     Type in the name (up to 8 letters or numbers beginning with a letter)
+     that you wish to save it under.  
+
+     If that name does not already exist, a new file is created with that
+     name and the software returns to the MAIN MENU.
+     
+     If that name already exists as a file on the floppy disk, you will be 
+     cautioned with the statement:
+
+       "FILENAME ALREADY EXISTS. FILE DATA WILL BE REPLACED WITH NEW DATA.
+        PROCEED (Y/N) ? "
+
+       If you answer "Y", the old file data will be lost and cannot be
+                          retrieved. It will be replaced by the new data.
+       If you answer "N", the software will return to the question "NAME OF
+                          FILE TO SAVE DATA UNDER (CR TO CANCEL) ? " and 
+                          give you a chance to select another name that has 
+                          not been used.
+     
+     To abort from saving the file, respond with "Enter" (CR) without a
+     name.  The software returns to the CREATE FILE MENU.     
+
+     After saving the created file, the software returns to the main
+     menu selection but does not send the created file to the PFG-100
+     until commanded to send it from the MAIN MENU selection "S" SEND FILE.
+
+
+7.0 EDIT FILE MENU
+     
+     When "E" is selected from the MAIN MENU, a new screen appears with
+     the question "NAME OF FILE TO EDIT (CR TO CANCEL) ? > ".  Enter 
+     the name of the file to edit (see 5.0 MAIN MENU part (E) EDIT FILE).  
+     The file data is obtained from the floppy disk and put into temporary
+     memory.  The EDIT FILE MENU is displayed from which formatted screens 
+     are selected to enter the main frequency list or Programs 1-9.  When 
+     all of the data has been entered for the complete file, it may be 
+     saved by hitting "S" while in the EDIT FILE MENU.
+                                  (11)
+
+
+
+
+
+
+                      EDIT FILE MENU
+                      ----------------
+          
+                      (M) EDIT MASTER FREQUENCY LIST
+                      (1) EDIT PROGRAM P1
+                      (2) EDIT PROGRAM P2
+                      (3) EDIT PROGRAM P3
+                      (4) EDIT PROGRAM P4
+                      (5) EDIT PROGRAM P5
+                      (6) EDIT PROGRAM P6
+                      (7) EDIT PROGRAM P7
+                      (8) EDIT PROGRAM P8
+                      (9) EDIT PROGRAM P9
+                      (S) SAVE FILE
+                      (R) RETURN TO MAIN MENU
+
+                      SELECTION ? > _
+
+
+
+(M) EDIT MASTER FREQUENCY LIST
+
+     This selection is very similar to the CREATE MASTER FREQUENCY 
+     selection except instead of displaying an initial blank list it 
+     displays the existing Master Frequency list of the file being edited.
+     Do not make changes to the Master Frequency list if the goal is to
+     make some changes to the file's Programs only. Or do make changes if 
+     the goal is to use the Master Frequency list as a starting point for
+     a new list and then adding and/or removing some frequencies.  As 
+     mentioned earlier in the NOTE OF CAUTION (under 6.0), making changes 
+     to the Master Frequency list may shift the position of the 
+     frequencies and cause a different set of sub-list frequencies to be 
+     selected in the Programs.
+
+     Review CREATE MASTER FREQUENCY LIST because the same instructions
+     apply to EDIT MASTER FREQUENCY LIST.  
+
+(1) EDIT PROGRAM P1  (typical of all 9)
+
+     This selection causes the Program number formatted screen to appear 
+     with the named file's Master Frequency list containing the selection 
+     of frequencies forming the sub-list, and 3 columns containing the 
+     named file's selections of parameter values for the Mode, the Dwell 
+     Time and the Interrupt Time.  
+
+     Review CREATE PROGRAM P1 because the same instructions apply to
+     EDIT PROGRAM P1.
+
+(S) SAVE FILE
+    
+     The comments for SAVE FILE are the same as under CREATE FILE MENU.
+
+
+
+
+
+
+                                  (12)
+
+
+
+
+
+
+
+
+USEFUL SYSTEM COMMANDS
+----------------------
+
+When the software is exited to the DOS computer system, the files may be 
+listed, erased, copied and renamed with certain standard system commands.
+The file names used with the software have extensions added to them for
+residing in the system and on disk.  The extension to the name is .P10
+This extension must be tacked onto the name for the system commands to
+operate, but must be omitted when used with the programming software.
+
+LIST FILES
+----------
+All of the files saved on disk and available to program the PFG-100 can
+be listed by typing "DIR *.P10" at the system prompt. For example,
+      A:> DIR *.P10
+"*" is a wildcard designator so all file names with the .P10 extension 
+will be listed.
+
+ERASE FILES
+-----------
+Any file saved on disk and available to program the PFG-100 can be erased
+by typing "ERASE NAME.P10" where NAME is replaced with the name of the
+file to be erased. For example, to erase a file named "SAM1"
+     A:> ERASE SAM1.P10
+
+COPY FILES
+----------
+A file saved on disk and available to program the PFG-100 can be copied
+to a different file name and the files under both names will be identical.
+For example,
+     A:> COPY SAM1.P10 SAM2.P10
+A copy of SAM1 will be made and named SAM2.  Both will be the same.
+
+RENAME FILES
+------------
+A file saved on disk and available to program the PFG-100 can be renamed
+to a new file name.  The old file name will no longer exist.
+     A:> RENAME SAM1.P10 SAM9.P10
+SAM9.P10 replaces the name SAM1.P10 which disappears. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                  (13)
+
+
+\MCS51\SAM\PROGPFG.MAN					

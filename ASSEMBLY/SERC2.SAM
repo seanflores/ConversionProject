@@ -1,0 +1,591 @@
+;SER.SAM   SERIAL COMMUNICATIONS MODULE
+
+SERJ:	  MOV	PSW,#18H	; SET REGISTER BANK #3
+	  JBC	RI,RECEIVE	; J if RECEIVE interrupt
+	  AJMP	TRANSMIT	; J if TRANSMIT interrupt
+;**************************************************
+;*                RECEIVE                         *
+;**************************************************
+; R7=  0          1          2          3          4        5
+;   Command   Command     # bytes   MS Address   Data     Carriage
+; Identifier  Function                      	           Return
+;
+; R7 = 5  P (50) Command
+; R7 = 6  F (46) Command 
+; R7 = 7  <cr>
+; Data is received from the computer software files to be written to NVMEM.
+; The EEPROM stores 128 words or 256 bytes so the data must be received in
+; batches because it is stored in RAM as received and the written to NVMEM.
+; Only the addresses 6FH to 30H are available for storage so no more than
+; 20H words (64 bytes) can be received in a batch.  This means there could
+; be up to 4 batches.  All batches except the final use a command letter P
+; for "preliminary".  The final batch uses a command letter F.
+;
+
+RECEIVE:  MOV	A,SBUF		; Get received byte   
+	  ANL	A,#7FH		; Make ASCII char
+          CJNE	A,#2AH,ISR7EQ0	; *=2AH
+	  MOV	R7,#1		; Command identifier recvd, start receive seq
+	  AJMP	COMRETI
+;---------------------------------------------------------------------
+ISR7EQ0:  CJNE	R7,#0,ISR7EQ1	; R7=0 signifies end of last command condition
+	  AJMP	COMRETI		; Disregard received byte
+;---------------------------------------------------------------------
+ISR7EQ1:  CJNE	R7,#1,ISR7EQ2	; R7=1 is Command letter
+          MOV	R5,A		; R5= ASCII Command letter
+	  AJMP	IR7RETI
+;---------------------------------------------------------------------
+ISR7EQ2:  CJNE	R7,#2,ISR7EQ3	; R7=2 is # words
+	  CLR	C		; ASCII char value - #30H is # words NVMEM
+	  SUBB  A,#30H          ; 0=0, 1=1,,:=10;=11,,A=17,B=18,,Z=32,[=33 etc
+	  MOV	R4,A		; R4= byte or word number value
+	  AJMP	IR7RETI
+;---------------------------------------------------------------------
+R70RETI:  MOV	R7,#0
+	  AJMP  COMRETI
+IR7RETI:  INC	R7
+COMRETI:  POP	ACC
+	  POP   PSW
+	  RETI
+;---------------------------------------------------------------------
+ISR7EQ3:  CJNE	R7,#3,ISR7EQ4   ; R7=3
+          ACALL CONVNTB		; Combine 2 nibbles to make data address for
+                                ; NVMEM X (58), F(46) or P(50). Put in R3.
+	  JB	LSNIBBLF,COMRETI ; J if only 1st nibble received
+	  MOV	A,R5		; Both nibbles rcvd to R3, command letter in R5
+ISITP:    CJNE  A,#50H,ISITF    ; Command letter P (50).Puts batchdata to NVMEM
+	  MOV	01H,R3		; R1 (RB0) contains NVMEM starting address
+	  MOV	R0,#06FH	; Starting RAM temp store MS address
+	  MOV	03H,R4		; R3 (RB0) contains # NVMEM words to be written
+	  MOV	R7,#5		; R7=5 is the 50, Prelim batch in NVMEM routine
+	  CLR	STARTF		; STARTF is 2nd byte indicator of word
+          MOV	DPTR,#MAINIDLE  ; Idle while R7=7 routine puts incoming data
+				;   into RAM starting at 6F, then put to NVMEM
+				;   by main program PUTPNVM
+	  SETB  TRISTATE	; Disable display segments during data transfer
+	  MOV	IE,#90H		; Disable all but serial interrupt
+          JMP   CLRRETI2	; J to MAINIDLE routine in main program
+
+ISITF:    CJNE  A,#46H,ISITX    ; Command letter F (46).Puts prog data to NVMEM
+	  MOV	01H,R3		; R1 (RB0) contains NVMEM starting address
+	  MOV	R0,#06FH	; Starting RAM temp store MS address
+	  MOV	03H,R4		; R3 (RB0) contains # NVMEM words to be written
+	  MOV	R7,#6		; R7=6 is the 46, Final batch to NVMEM routine
+	  CLR	STARTF		; STARTF is 2nd byte indicator of word
+JMAINIDL: MOV	DPTR,#MAINIDLE  ; Idle while R7=7 routine puts incoming data
+				;   into RAM starting at C8, then put to NVMEM
+				;   by main program PUTPNVM
+	  SETB  TRISTATE	; Disable display segments during data transfer
+ 	  MOV	IE,#90H		; Disable all but serial interrupt
+JCLRRET:  JMP   CLRRETI2	; J to PUTNVM routine in main program
+
+ISITX:    CJNE	A,#58H,ERROR1
+	  AJMP	IR7RETI		; INC R7->4 & look for CR
+;-------------------------------------
+ISR7EQ4:  CJNE	R7,#4,ISR7EQ5	; R7=4 is X (Receive) data transfer CR
+	  CJNE	A,#0DH,ERROR1
+          CJNE	R5,#58H,ERROR1  ; X (58) command is GETNVM routine in main prog
+	  MOV   DPTR,#GETNVM    ; J to GETNVM routine at main prog level.
+	  AJMP	JCLRRET
+;---------------------------------------------------------------------
+; Special routine for P (50) Preliminary batch command, Put freq data in RAM,
+;  then NVMEM.
+ISR7EQ5:  CJNE  R7,#5,ISR7EQ6
+          ACALL CONVNTB
+	  JB	LSNIBBLF,JCOMRETF
+	  JBC	STARTF,SECBYTF
+ 	  MOV	@R0,A
+	  DEC	R0
+	  SETB  STARTF
+JCOMRETF: AJMP	COMRETI
+SECBYTF:  MOV	@R0,A
+	  DEC	R0
+          DJNZ	R4,JCOMRETF
+	  MOV	DPTR,#PUTPNVM
+          MOV	R7,#7		; Make R7=7 & wait for CR before J to PUTPNVM
+	  AJMP  COMRETI
+;---------------------------------------------------------------------
+; Special routine for F (46) Final batch command, Put program data in RAM,
+;   then NVMEM.
+ISR7EQ6:  CJNE  R7,#6,ISR7EQ7
+          ACALL CONVNTB
+	  JB	LSNIBBLF,JCOMRETP
+	  JBC	STARTF,SECBYTP
+ 	  MOV	@R0,A
+	  DEC	R0
+	  SETB  STARTF
+JCOMRETP: AJMP	COMRETI
+SECBYTP:  MOV	@R0,A
+	  DEC	R0
+          DJNZ	R4,JCOMRETP
+	  MOV	DPTR,#PUTFNVM
+          MOV	R7,#7		; Make R7=7 & wait for CR before J to PUTFNVM
+	  AJMP  COMRETI
+
+;------------------------------------------------------------------------
+; Error routine. Send # Addr 1 <cr>  where # is that symbol meaning error
+ERROR1:   MOV	NVBUF3,#23H	; # symbol
+	  MOV	NVBUF2,R6	; Saved address
+	  MOV	NVBUF1,#31H	; Number 1
+	  MOV	R2,#3		; # bytes to be transmitted
+	  SETB	TERMCRF
+	  SETB  BUSYTXF
+	  SETB  TI
+	  AJMP	R70RETI		; R7=0
+
+;---------------------------------------------------------------------
+ISR7EQ7:  CJNE	R7,#7,ERROR1	; R7 = 6 when CR expected
+	  CJNE	A,#0DH,ERROR1	; CR not received as expected, so error
+	  MOV	R7,#0
+	  AJMP	JCLRRET		; J to main prog routine pointed to by DPTR
+
+; Convert value from 0-F ASCII to nibble 0-15 dec with error flag
+; Convert value from 0-F, G-Z ASCII to byte 0-35 (error flag G-Z must
+;   be disregarded)
+CONV0ZN:  JB	ACC.5,$+5   	; J if 0-9 (ASCII 30-39), A-Z=41-5A
+	  ADD	A,#0F9H		; A-Z=41-5A -> 3A-53
+          ADD	A,#0D0H		; 30-53 = 0 - 35 dec
+  	  RET	
+
+; Convert nibble to byte
+; ENTRY - Hex ASCII value in Acc (two passes)
+; EXIT  - Byte value in R3 after two passes
+CONVNTB:  ACALL	CONV0ZN		; Get nibble
+	  JBC	LSNIBBLF,LSNIB	; J if second pass
+	  SWAP	A		; MS nibble received first, put in hi nibble
+	  MOV	R3,A
+	  SETB	LSNIBBLF	; Set flag that next pass is lo nibble
+	  RET
+LSNIB:	  ORL	A,R3		; Combine nibbles
+	  MOV	R3,A		; Save in R3
+	  RET
+
+
+
+;**************************************************
+;*                TRANSMIT                        *
+;**************************************************
+TRANSMIT: CLR	TI
+	  JBC	ENDTXF,ENDTX	; J & CLR BUSYTXF cause last byte sent complete
+          MOV	A,#TXBUF1-1
+	  ADD	A,R2
+	  MOV	R0,A		; Point to current transmit buffer location
+	  MOV	SBUF,@R0	; Transmit data byte
+	  DJNZ	R2,TXRETI   	; J if not done transmitting
+	  JBC	TERMCRF,TERMCR  ; J & add CR terminator only
+	  SETB  ENDTXF		; Last data in buffer being transmitted. Done
+				;   transmitting on next interrupt so at that
+				;   time CLR BUSYTXF
+TXRETI:   POP	ACC
+	  POP	PSW
+	  RETI
+
+ENDTX:    CLR	BUSYTXF		; Done transmitting last char of buffer
+	  AJMP	TXRETI
+
+TERMCR:   CLR	A
+          MOV	@R0,#0DH	; Always put CR in buffer
+TERMRET:  AJMP  TXRETI
+
+;--------------------------------------------------------------------------
+;                 RB0 or Main Program level routines
+;--------------------------------------------------------------------------
+
+; Command P (50)  Put Preliminary batches in NVMEM
+; ENTRY - R1 (RB0) contains NVMEM address to be written
+;         R3 (RB0) contains # words to be written
+PUTPNVM:  MOV	R0,#06FH	; Starting RAM MS address of data
+;	  CLR	EA		; No interrupts to change P2
+	  CALL	NVWRIT		; Write RAM stored data to NVMEM
+	  JMP 	MAINIDLE        ; Wait for program data to be received
+
+; Command F (46)  Put Final batch in NVMEM
+; ENTRY - R1 (RB0) contains NVMEM address to be written
+;         R3 (RB0) contains # words to be written
+PUTFNVM:  MOV	R0,#06FH	; Starting RAM MS address of data
+	  CLR	EA		; No interrupts to change P2
+	  CALL	NVWRIT		; Write RAM stored data to NVMEM
+	  AJMP 	CLDRST1		; End of data being written to NVMEM
+
+; Commands X  (58)  Get data from NVMEM
+GETNVM:	  MOV	R1,1BH		; R3 (RB3) contains NVMEM MS address
+	                        ; R1 contains NVMEM MS address of words read
+	  CLR   ENDSENDF
+; Going to read 1 word at a time and transmit
+GETNLUP:  DJNZ	1CH,GETRDP	; R4 (RB3) = # words NVMEM to transmit
+	  SETB	TERMCRF		; Put CR at end of last chars
+	  SETB  ENDSENDF	; Last pass
+GETRDP:                                                              
+	  CLR	EA
+	  MOV	P2,#0FFH
+       	  CALL	NVREAD1W	; Read NVMEM to NVMEM3,2 (1 word)
+	  SETB  EA
+	  MOV	A,NVBUF3	; Get byte written to NVBUF3
+	  ACALL	CONVBTA		; Convert to 2 hex ASCII chars
+	  MOV	NVBUF3,A	; Put in TXBUF3,4
+	  MOV	NVBUF4,B
+	  MOV	A,NVBUF2	; Get byte written to NVBUF2
+	  ACALL	CONVBTA		; Convert to 2 hex ASCII chars
+	  MOV	NVBUF1,A	; Put in TXBUF1,2
+	  MOV	NVBUF2,B
+	  MOV	1AH,#4		; R2 (RB3) = 4, transmit 4 chars from TXBUF
+; R1 decremented by NVREAD routine
+	  SETB  BUSYTXF
+	  SETB	TI
+	  JB	BUSYTXF,$	; Wait here til done transmitting last chars
+	  JNB   ENDSENDF,GETNLUP
+CLDRST1:  JMP	CLDRESET
+
+; Subroutines
+CONVBTA:  MOV	B,A
+	  SWAP	A		; Convert MS nibble first
+	  ACALL	CONVNTA
+	  XCH	A,B		; B = Converted MS nibble
+	  ACALL  CONVNTA		; Convert LS nibble second
+	  RET			; LS nibble in A
+
+CONVNTA:  ANL	A,#0FH		; Mask on LS nibble
+	  ADD	A,#0F6H		; 0-9 -> F6-FF ; A-F -> 00-05
+	  JC	$+4		; J if was A-F to start
+	  ADD	A,#0F9H		; 0-9 -> F6-FF -> EF-F8
+	  ADD	A,#41H		; 0-9 -> F6-FF -> EF-F8 ->30-39 (hex ASCII 0-9)
+	  RET			; A-F -> 00-05 -> 41-46 (hex ASCII A-F)
+
+          NOP
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+          CLR   EPSEL
+	  CLR   EPSEL
+	  NOP
+	  NOP
+          JMP	PWROFF
+          NOP

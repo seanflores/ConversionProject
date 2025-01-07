@@ -1,0 +1,262 @@
+PFG100.SOF						    6-16-91
+
+                        PFG100 SOFTWARE
+                          VERSION 1.0
+
+
+OVERVIEW
+--------
+This software is used to create up to 5 programs in the PFG100.  Each of the
+5 programs may use any number of the frequencies that are listed in the
+software.  This version of the software is limited to a list of 17 common
+predetermined frequencies.  Future versions of the software will allow a
+choice of 30 listed frequencies and the frequencies comprising the list may
+be determined by the user.  
+
+In addition to selecting from the list of 17 frequencies, the user may also
+choose the dwell time and the interrupt time.
+  The Dwell Time is the length of time a particular frequency is being
+                 output before the PFG100 goes to the next frequency.
+  The Interrupt Time is the time that the particular frequency being output
+                 is on and the equal time that it is off.  This gating of
+                 the frequency repeats continually during the Dwell Time.
+
+The software allows the user to choose the Frequencies, the Dwell Time and
+the Interrupt Time for each of 5 programs to be stored in the PFG100.  After
+being selected, this total data for the 5 programs is stored in a single 
+file on the floppy disk for future use.  The user chooses a name for the 
+saved file that the user can remember to use at a later time.  File names
+can be from 1 to 8 letters or numbers but must start with a letter (e.g.
+E1HELP9 ).  The software is used to (1) create a new file and store it on 
+the floppy disk, (2) recall an old file, modify it and store it under the
+same name (or store it under a new name leaving the old name and file 
+intact for future use) and (3) selecting a file from those stored on the
+floppy disk and sending the data to the PFG100 where it is stored for use.
+The floppy disk has space for about a 100 files.  The file names can be
+listed on the screen by exiting the software program and typing DIR at the
+prompt (e.g.  A:> DIR ).  File names ending with a period and 3
+letters are computer files and cannot be loaded into the PFG100 (e.g.
+PFG100.EXE).
+
+
+CONNECTING THE HARDWARE
+-----------------------
+A cable is supplied that provides the connection for transfer of the data
+from the computer to the PFG100.  One end of the cable contains a miniature
+phone plug that plugs into the rear of the PFG100.  The other end of the
+cable contains a 9-pin Subminiature D connector that plugs into one of the
+serial ports on the rear of the computer.  If the serial port(s) have a
+25-pin connector, connect the enclosed 9-pin to 25-pin adapter to the end
+of the cable and then plug the 25-pin connector to the computer.
+
+If the serial port(s) are already in use, consider unplugging one to allow
+sending data to the PFG100 and then replacing it when done.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+USING THE SOFTWARE
+------------------
+Turn on the computer in a normal manner.  Put the floppy disk in the floppy
+drive of the computer and select the drive by typing the drive letter 
+followed by a colon.  Typically, the floppy drive is the "A" drive and if
+so type "A:".  The computer should respond with the prompt 
+   A:>
+Type PFG100
+   A:>PFG100
+The software responds with the question
+   COM(1) OR COM(2) ?
+If you know which Serial I/O port the cable is connected to, type the 
+appropriate "1" or "2".
+--------------------------------------------------------------------------
+Note: If you do not know the COM #, type "1" and continue by attempting
+      to send the test file "T1" to PFG100.  This file, if received by the
+      PFG100, puts one frequency in each of the 5 programs and this
+      frequency is 9999.  Push START (green button) on the PFG100 and if it
+      does not display 9999, it did not receive the data.  So quit the
+      program and repeat the procedure trying COM(2).  Once you see 9999
+      displayed on the 1st push of START using file "T1", you can be sure
+      that the COM number is correct.  Remember this number, either 1 or 2,
+      for future use and remember also where the cable is connected to the
+      computer.
+--------------------------------------------------------------------------
+The computer then goes to the main menu which requests the following 
+selection.
+   CREATE FILE (C), EDIT FILE (E), SEND FILE (S) OR QUIT (Q) ?
+The response is the appropriate letter C, E, S or Q.  A description of
+each selection follows.
+
+   CREATE FILE (C)
+     This selection allows the user to start from scratch and build the
+     file containing data for up to 5 programs.  A formatted screen
+     allows easy selection of the parameters.  The screen is divided into
+     5 identical sections representing the 5 programs to be created.
+     Each program section is further divided into 3 columns representing
+     the Dwell Time selections, the Interrupt Time selections and the
+     Frequency selections.  Only one choice is made for the Dwell Time
+     and the Interrupt Time but any number of Frequencies may be selected
+     from 1 to 17.
+
+     MAKING SELECTIONS
+     -----------------
+     When the formatted screen is displayed, the first item (1.5 sec) in
+     the Dwell Time column of Program 1 is flashing. 
+     This is asking,
+        "Do you want to use this value ?".
+           If the answer is Yes, you want a Dwell Time of 1.5 sec, then
+                                 hit "ENTER" on the keyboard and the
+                                 selection will be indicated by displaying
+                                 the value 1.5 in black characters on a
+                                 white background.
+           If the answer is No,  hit the down arrow key and the 1.5 sec
+                                 will stop flashing and the 3 sec will
+                                 start flashing. If you want this value
+                                 hit "ENTER" as above and this value will
+                                 be selected, or hit the down arrow key and
+                                 the 10 sec value will flash.
+
+
+
+
+
+
+
+
+     If you go down a column and select a value, indicated by black char-
+     acters on a white background, and then change your mind and want to
+     select a value above it that you passed by, first hit "ENTER" again
+     and you will toggle off the value you just selected.  Then use the
+     up arrow key to return to the value you decided to use and hit
+     "ENTER" for it.
+
+     When you have selected the Dwell Time, hit the right arrow key and
+     you will move over to the Interrupt Time column.  Then use the up
+     or down arrow key to move to the desired value and hit "ENTER".
+
+     When you have selected the Interrupt Time, hit the right arrow key
+     and you will move over to the Frequencies column.  Then use the
+     up and down arrows and the "ENTER" key to select each frequency you
+     want to use in Program 1.  To erase a selection, hit the "ENTER" 
+     key a second time and it will return to white letters on a black
+     background indicating that it has been de-selected.
+
+     When Program 1 is finished, use the right arrow key to move over to
+     the Program 2 columns and repeat the procedure.  Then Programs 3, 
+     4 and 5 may be completed.
+
+     Since none of the data is saved on the floppy disk until you are
+     completely done, you may go back and forth between columns using
+     the left and right arrow keys, and up and down any given column
+     using the up and down arrow keys, selecting and de-selecting entries
+     with the "ENTER" key until the formatted screen represents the
+     programs just the way you want them.
+
+     SPECIAL NOTES
+     -------------
+     The Dwell Time and the Interrupt Time are the same for all
+     frequencies of a given program (E.g. Program 1) and therefore only
+     one selection is to be made per column for these two items for
+     each program group.  Those times may be different in Program 2 from
+     the values in Program 1 etc. 
+
+     If no selection is made in either of these two columns, the Dwell Time
+           is assumed to be 3 sec and the Interrupt Time is assumed to be
+           0.15 sec (the values for the CFR1000).
+     If two or more selections are made in either of these columns, the 
+           Dwell Time and the Interrupt Time is assumed to be the top one
+           selected in the column.
+     If no frequency is selected in a column, it is assumed that that
+           Program # and all of those coming after it are to be omitted.
+           For example, if Program 3 is the first program to have no 
+           frequencies selected, Programs 3,4 and 5 will be omitted even
+           if Program 4 or 5 does have frequencies selected.  The effect
+           on the PFG100 is to toggle back and forth between Programs 1
+           and 2.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     SAVING THE FORMATTED SCREEN DATA
+     --------------------------------
+     When the selected data is the way you want it, type "S" for Save.
+     The software will analyze your selections on the screen and format
+     then into the proper file structure.  The program will then ask
+       "NAME OF FILE TO SAVE DATA UNDER ? ".
+     Type in the name (up to 8 letters or numbers beginning with a letter)
+     that you wish to save it under.  If that name already exists as a
+     file on the floppy disk, you will be cautioned with the statement
+       "FILENAME ALREADY EXISTS. FILE DATA WILL BE REPLACED WITH NEW DATA.
+        PROCEED (Y/N) ? "
+     If you answer "Y", the old file data will be lost and cannot be
+                        retrieved. It will be replaced by the new data.
+     If you answer "N", the software will return to the question "NAME OF
+                        FILE TO SAVE DATA UNDER ? " and give you a chance
+                        to select another name that has not been used.
+
+     After saving the created file, the software returns to the main
+     menu selection but does not send the created file to the PFG100
+     until you command to send it from the main menu selection.
+
+   EDIT FILE (E)
+     This selection asks for the name of the file to be edited.  It
+     then displays the file selections on the formatted screen for
+     viewing.  It represents the prior selections as they were
+     saved under the file name.  You now have 3 courses of action.
+
+     (1)  You may merely view the file to see what selections that
+          file name represents.  When done viewing, hit the "ESC" key
+          and return to the main menu without any other action occurring.
+
+     (2)  You may make changes to the formatted data using the arrow
+          direction keys for placement and then the "ENTER" key to toggle
+          selections off and on.  When the formatted screen is the way
+          you desire it, you can type "S" to save the data.  When it
+          asks "NAME OF FILE TO SAVE DATA UNDER ? " you can respond with
+          the old file name to replace the old file data with the changed
+          file data.  It will caution you that a file with that name
+          already exits and when it asks "Proceed ? " you will respond "Y".
+
+     (3)  Same as (2) except after typing "S" you can respond with a new
+          file name which creates a new file and keeps the original data
+          under the old name.
+    
+
+   SEND FILE (S)
+     This selection asks for the name of the file to be sent from the
+     computer to the PFG100.  This file contains the data that controls
+     the PFG100 for up to 5 programs.  Data files are identified by name
+     so they can be recalled at a future time and the same data loaded
+     into the PFG100.  For example "ATOZ1" could be the name of a file
+     previously created with Program #1 containing the same frequencies
+     as the CFR1000 and Program #2 containing only the main cancer
+     frequencies and Program #3 containing only the main herpes frequencies
+     and no Program #4 or #5.  If this data is desired to be put into a
+     PFG100 then type "S" in response to the main menu question above, and
+     when the program asks for the file name, respond with "ATOZ1".
+
+   QUIT (Q)
+     This selection causes the software to exit back to the operating
+     system.
+

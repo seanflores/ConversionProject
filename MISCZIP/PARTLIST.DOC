@@ -1,0 +1,56 @@
+\MCS51\SAM\PARTLIST.DOC                                       11-14-00
+
+                          PFG100 PARTS LIST
+
+MAIN BOARD     110 PIECES  
+----------         
+
+     KIT   USE                                 KIT   USE
+CHK  QTY   QTY    DESCRIPTION             CHK  QTY   QTY    DESCRIPTION  
+--- ----  ----  -----------------------   --- ----  ----  ------------------- 
+     110   110  PC BOARDS, MAIN                      110  U1           TL082C
+           440  R1,R3,R4,R21  10.0K, 1%              110  U2         74HC4052
+           330  R2,R7,R8      4.75K, 1%                   U3       NOT USED
+           220  R5,R6           100, 1%              110  U4    40 PIN SOCKET
+           220  R9,R16          20K, 1%              110  U5     8 PIN SOCKET
+           110  R11            220K, 5%              110  U6             4N35
+           110  R12     2W       22, 5%              110  U7            LM393
+           110  R15           3.01K, 1%               
+           110  R19           2.21K, 1%              110  Q1          LM78L05                              
+           110  R20           6.19K, 1%                   Q2        OMITTED
+                R10      NOT USED                         Q3        NOT USED
+                R13,R14  NOT USED            
+                R17      OMITTED                          C1        OMITTED
+                R18      NOT USED                         C2,C3     OMITTED    
+                                                     110  C4      3300UF, 25V
+           220  D1,D2          1N4744A               110  C5       220UF, 25V
+           220  D3,D4          1N4745A               110  C6      0.1UF, DISK 
+           110  D5    1N914 OR 1N4148                220  C7,C8  22/27PF,DISK
+           110  D6             1N5228                110  C9       .047 MYLAR
+                                                     110  C10       10UF, 50V
+
+           110  DB   BRIDGE RECT DF06                770  J     JUMPER
+                                                     110  X2   12 MHZ CRYSTAL
+           110  F1          FUSE ASSY                660     VECTOR TERMINALS
+                                               PARTIAL ROLL     #22 BARE WIRE
+           110  W           POWER TAB
+           110  B   COUPLER WIRE ASSY
+           110  TRANSFORMERS, 4-02-5020            
+
+
+
+
+DISPLAY BOARD          NOTE: MATCH LED BRIGHTNESS CODE ON EACH BOARD
+-------------                             
+                                           
+     KIT   USE                           
+CHK  QTY   QTY    DESCRIPTION              
+--- ----  ----  -----------------------  
+     110   110  PC BOARDS, DISPLAY
+     220   220  DUAL LED DIGITS, GREEN
+     110   110  74HCLS374  IC
+     110   110  74HC04  IC
+     220   220  0.1UF DISK CAPACITOR
+     220   220  82 OHM SIP RESISTOR NETWORK
+     440   440  2N4401 TRANSISTOR
+

@@ -1,0 +1,157 @@
+							  6-30-99
+
+                         MODEL  PFG-100
+
+                      OPERATING INSTRUCTIONS
+
+
+
+DESCRIPTION
+-----------
+
+The Model PFG-100 Programmable Frequency Generator is a microcomputer-based,
+line-powered, square-wave generator with a range of 10 Hz to 9,999 Hz that 
+provides the user with a front panel selection of 1 to 18 programmed
+sequences of frequencies.  Each frequency in the chosen sequence is 
+maintained on the output for a pre-selected time interval from 0.2 seconds
+to 20 minutes.  In addition, all frequencies in a given sequence are 
+pre-set either to be continuous or to be interrupted with equal on and off
+intervals from 0.1 to 4.0 seconds.  Two modes of sequencing are available
+for each of the 18 programmed sequences.
+
+    STEP  MODE:  Each frequency in the sequence is pre-selected and the
+                 program steps through each frequency in order and then
+                 repeats.
+
+    SCAN  MODE:  Only the lowest and highest frequencies of the desired
+                 sequence are pre-selected and the program steps through
+                 all of the in-between frequencies using small incremental
+                 changes in frequency.  When the program reaches the
+                 highest frequency, the scan begins again from the
+                 lowest frequency. For frequencies under 1024 Hz, the
+                 frequency increments are 1 Hz.  Above 1024 Hz, the
+                 frequency increments increase from 0.1% at 1024 Hz to
+                 1% at 9999 Hz.
+
+A four-digit LED readout provides a display of the current square-wave
+output frequency in Hertz (cycles per second).  The internal crystal-
+controlled microcomputer generates the frequencies automatically so no 
+manual frequency adjustment is required.  A manual OUTPUT level control
+provides adjustment of the output amplitude from 0 V to 20 V peak-to-peak
+(+-10 V peak).
+
+Three pushbutton switches marked START, HOLD and PRGM (Program) provide
+operational control by starting the sequence, holding the current frequency
+and selecting the desired program.  After a program from 1 to 18 is
+selected, and the sequence is initiated with the START switch, no further
+operation of the controls is required, except possibly to adjust the output
+level.  The sequence repeats indefinitely, but may be interrupted at any 
+time by selecting another program.
+
+The output signal leads may be accidentally shorted together without any
+damage to the instrument and the instrument will continue to function
+normally when the short is removed.  In addition, user safety is enhanced
+by conservative circuit design and special attention to component ratings
+and printed circuit board lead spacings that greatly minimize any danger 
+of shock from the power line.
+
+The PFG-100 may be re-programmed any number of times from a computer over
+a cable that plugs into the rear of the instrument.  This means that the
+instrument will not become obsolete when new and different frequencies 
+become desirable.
+
+
+CONTROLS
+--------
+
+The user front panel controls consist of an output level control marked
+OUTPUT at the upper right, a program selector pushbutton marked PRGM, a
+HOLD pushbutton and a START pushbutton.  The  POWER ON-OFF switch is 
+located at the left rear of the instrument.
+
+POWER:   This switch turns power ON or OFF to the instrument.
+
+OUTPUT:  This control adjusts the square-wave output level over a range
+         of 0 V to 20 V peak-to-peak.
+
+START:   When momentarily pushed, this pushbutton starts the pre-
+         determined sequence of output frequencies.  If pushed after the
+         sequence has started, the program advances to the next frequency
+         in the sequence immediately without waiting for the present 
+         frequency dwell time to expire.  Its operation is the same in 
+         either the Step mode or the Scan mode.
+
+HOLD:    When momentarily pushed while a frequency is being displayed, 
+         this pushbutton causes that frequency to be held indefinitely.
+         This condition is indicated by the lighting of all decimal points
+         on the display.
+
+         The frequency is held until either
+           (1) the START pushbutton is pressed to take the instrument 
+               out of the HOLD condition and advance it to the next 
+               frequency in the sequence, or
+           (2) the PRGM pushbutton is pressed to advance the instrument
+               to the next program.
+
+PRGM:    When momentarily pushed, this pushbutton causes the instrument
+         to advance to the next available program number, P1 to P18 as
+         indicated on the display.
+
+
+OPERATING PROCEDURE
+-------------------
+
+1.  Check to ensure that the power line voltage, either 115 V or 
+    230 V, correctly corresponds to the voltage shown on the rear panel 
+    label.  Then plug the instrument into the power line and turn on the 
+    POWER switch.  The display lights with "P 1".  This is the first 
+    programmed sequence of frequencies.  If this is the desired program,
+    go to step 2 below.  If not, press PRGM to select program 2 and display 
+    "P2".  Repeat until the desired program number P1 to P18 is displayed.
+    The PRGM pushbutton cycles the selection back to P1 following P18.
+
+2.  Push the START pushbutton momentarily and then release it.  The first
+    frequency in the sequence of the selected program is applied to the 
+    output and its frequency value replaces the program number P1 to P18 
+    on the display.  That frequency remains on the output for the pre-set 
+    dwell time and then the next frequency appears on the display and is 
+    applied to the output.  When the sequence reaches the end, it 
+    automatically repeats and this cycling continues indefinitely.
+
+3.  Other actions that may be taken at any time are:
+
+      (1)  Momentarily push HOLD at any time to hold indefinitely the 
+           frequency being displayed, or
+
+      (2)  Momentarily push PRGM to advance to the next program.
+
+    In either case, push START as in Step 2 to begin sequencing again.
+
+4.  When no more operation is desired, push PRGM and then turn the POWER 
+    switch off.
+
+Note: If it is desired to step the program rapidly through the sequence of
+      frequencies to reach a particular frequency of interest, this can be
+      achieved by repeatedly pushing and releasing the START pushbutton.
+      Since each frequency in the sequence is displayed, this action can
+      be terminated when the desired frequency is indicated.
+
+
+PROGRAMMING
+-----------
+
+The preceding information applies to an instrument that has been pre-
+programmed with up to 18 different sequences of frequencies.  The 
+instrument may be programmed by the factory, the distributor or the user.
+Once programmed, the data is retained in non-volatile memory.  Therefore 
+the power can be turned off and the data will not be lost.  This is a
+special memory requiring no batteries.
+
+Programming of the PFG-100 is accomplished via the rear sub-miniature 
+phone jack.  A programming cable connects from the jack to a serial 
+(RS-232) port of an IBM PC/XT/AT computer or equivalent.  Factory software
+is available for convenient programming of the instrument.
+
+
+
+

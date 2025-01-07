@@ -1,0 +1,659 @@
+;MCS51\SOURCE\ARSUB.LR8
+; ARITHMETIC SUBROUTINES
+
+;------------------------------------------------------------------------------
+;         ADD 3 BYTES
+;------------------------------------------------------------------------------
+;  ADD A TO B AND LEAVE SUM IN B.  B=B+A
+;
+;  ENTRY -> R0 = LSB ADDRESS OF A
+;	    R1 = LSB ADDRESS OF B
+;
+;  EXIT  -> RESULT IN B
+;	     C=0 IF NO CARRY
+;	     C=1 IF CARRY
+;
+ADD3BY:   MOV   R7,#03
+          CLR   C
+ADDLP:    MOV   A,@R1
+          ADDC  A,@R0
+          MOV   @R1,A
+          INC   R0
+          INC   R1
+          DJNZ  R7,ADDLP
+          RET
+
+
+;------------------------------------------------------------------------------
+;         SUBTRACT 3 BYTES
+;------------------------------------------------------------------------------
+;  Subtract R0 from R1 and leave difference in R1.  R1 = R1 - R0
+;
+;  ENTRY:   R0 -> LSB address
+;	    R1 -> LSB address
+;
+;  EXIT:    Result in R1
+;	    C = 0 IF R0 <= R1
+;           C = 1 IF R0 > R1
+;
+SUB2A1:   MOV   R1,#Z7
+SUB2Z1:   MOV   R0,#Z1
+SUB2BY:   MOV   R7,#02		; Loop counter
+SUBCC:    CLR   C 
+SUBLP:    MOV   A,@R1           ; Minuend value
+          SUBB  A,@R0           ; Subtract
+          MOV   @R1,A           ; Store difference in R1
+          INC   R0
+          INC   R1
+          DJNZ  R7,SUBLP
+          RET
+
+
+;******************************************************************************
+;*        MULTIPLY & DIVIDE  routines                            
+;******************************************************************************
+
+;------------------------------------------------------------------------------
+;         MULTIPLY X BYTES BY Y BYTES
+;------------------------------------------------------------------------------
+;  THIS IS A GENERAL PURPOSE MULTIPLY ROUTINE.
+;
+;  ENTRY -> R2 = # X BYTES
+;	    R3 = # Y BYTES
+;           R4 = TEMP MEMORY X VALUE
+;           R5 = X LSB ADDRESS
+;           R6 = Y LSB ADDRESS
+;	    R7 = PRODUCT LSB ADDRESS
+;  EXIT  -> R2+R3 BYTE PRODUCT AT R7 LSB ADDRESS
+;
+MUL147:	  MOV	R6,#Z1		; Multiply Z3:1 by Z6:4, product Z12:7
+MULX47:	  MOV	R5,#Z4
+	  MOV	R7,#Z7
+	  ACALL	ZZ12Z7		; Zero Z12:7
+MUL33:	  MOV	R2,#03
+MUL3:     MOV	R3,#03
+GPMUL2:   MOV   YMLMEM,R3       ; Save #y bytes in memory
+MULLP2:   MOV   A,R5            ; R5  x address
+          MOV   R0,A            ; R0 = X address
+          MOV   A,@R0           ; X value
+          MOV   R4,A            ; R4 = X value
+          MOV   A,R6            ; R6  Y address
+          MOV   R0,A            ; R0 = Y address
+          MOV   A,R7            ; R7  product address
+          MOV   R1,A            ; R1 = product address
+MULLP3:   MOV   A,@R0           ; Y value
+          MOV   B,R4            ; X value
+          MUL   AB
+          ADD   A,@R1           ; Add previous product to a
+          MOV   @R1,A           ; Save
+          INC   R1              ; Next product address
+          MOV   A,B             ; Msb of multiply instruction
+          JNB   CYFWD,NOWADD
+          INC   A
+NOWADD:   ADDC  A,@R1           ; Add previous product
+          MOV   @R1,A           ; Save
+          MOV   CYFWD,C
+          INC   R0              ; Next y address
+          DJNZ  R3,MULLP3
+          INC   R5              ; Done with that x address
+          INC   R7
+          MOV   R3,YMLMEM       ; Re-initialize y address
+          DJNZ  R2,MULLP2       ; Goto next x address
+          RET
+
+;-----------------------------------------------------------------------------
+;DIVIDE 4 BYTES BY 2 BYTES
+;-----------------------------------------------------------------------------
+
+;  THIS IS A FIXED LOCATION DIVISION. THE DIVIDEND & DIVISOR
+;    MUST BE PROPERLY LOCATED ON ENTRY.
+;  ENTRY -> AS SHOWN BELOW
+;
+;      REMAINDER      QUOTIENT
+;       --------  ------------------  
+;       Z08  Z07  Z06  Z05  Z04  Z03  Z02  Z01
+;		  ------------------  --------
+;		       DIVIDEND       DIVISOR
+;
+;IF DIVISOR IS 0 THEN QUOTIENT IS FF 00 00 00 IN Z6-3.
+;
+DIVIDE1M: MOV	Z6,#0FH		; Z6:4 = 1,000,000 decimal
+	  MOV	Z5,#42H
+	  MOV	Z4,#40H
+	  MOV	Z3,#0
+DIVIDE:   MOV   A,Z1
+	  JNZ	DIVID1
+          MOV	A,Z2
+          JNZ   DIVID1          ; Check divisor Z2-1 for zero
+          MOV   Z6,#0FFH        ; Set MS byte of remainder=FF
+DIVID1:   MOV   Z7,#0           ; Zero remainder Z8:7
+          MOV	Z8,#0 
+          CLR   C
+          MOV   R2,#32          ; Loop counter. 4 byte dividend
+DIVLUP:   MOV   R1,#Z3          ; Dvend LSB
+          MOV   R3,#6           ; Sub-loop counter. 6 bytes in result
+MINLUP:   MOV   A,@R1           ; Dvend
+          RLC   A               ; Shift carry into bit 0 of dividend
+          MOV   @R1,A
+          INC   R1
+          DJNZ  R3,MINLUP       ; Repeat for 6 bytes
+;
+;IF C=1, DIVISOR WAS > REMAINDER EVEN THO REMAINDER MS BIT
+;  WAS A 1.  THE 1 MUST BE DEALT WITH THIS TIME.
+          JNC   TRIAL           ; C<>1 so go on
+          ACALL SUB2A1          ; C=1 so sub divisor from remainder
+                                ;  even though it is larger
+          AJMP  DECCT1          ; C=1 because divisor must be > remainder
+;
+;CHECK IF DIVISOR  DIVIDEND MS BITS (REMAINDER)
+;SUBTRACT DIVISOR FROM REMAINDER W/O SAVING DIFFERENCE (COMPARE)
+;
+TRIAL:    MOV   R0,#Z1
+          MOV   R1,#Z7
+          ACALL CMPCC2          ; Subtract w/o saving
+                                ; C=0 if divisor <= remainder
+	  INC	R0		; CMPCC2 routine does not have extra INC R0
+				;   like SUB3A1
+          JC    DECCT           ; Jump if divisor > remainder, C=1
+;
+;DIVISOR <= REMAINDER. SUB AGAIN & SAVE RESULT IN REMAINDER
+;
+          ACALL SUB2A1
+DECCT:    CPL   C
+DECCT1:   DJNZ  R2,DIVLUP
+          MOV   R3,#04          ; End loop counter (quotient only)
+                                ; R0 is quotient lsb
+ENDLUP:   MOV   A,@R0
+          RLC   A               ; Final shift of quotient only
+          MOV   @R0,A
+          INC   R0
+          DJNZ  R3,ENDLUP
+          RET
+
+
+
+
+;-----------------------------------------------------------------------------
+;         MULTIPLY BY 10, PRODUCT IN SAME LOCATION AS MULTIPLICAND
+;-----------------------------------------------------------------------------
+          
+;  ENTRY 
+;   MUL10D - Multiply Z9:4 by 10
+;   MUL10N - Multiply Z9:7 by 10
+;   MUL10U - Multiply any location & # bytes by 10
+;
+MUL10D:   MOV   R0,#Z4          ; Mult Z9:4 by 10
+          MOV   R2,#06  
+          AJMP  MUL10U
+MUL10N:   MOV   R0,#Z7          ; LSB
+MUL10B:   MOV   R2,#03          ; Loop counter
+MUL10U:   CLR   A
+M10LUP:   MOV   B,#10           ; B= 10
+          XCH   A,@R0           ; A= Y value  B= hi order byte from prev mul AB
+          MUL   AB              ; New product
+          ADD   A,@R0           ; Add new lo order byte to prev hi order byte
+          MOV   @R0,A           ; Save result of add
+          MOV   A,B             ; A=hi order byte of mul
+          JNC   NEXTR0          ; J if no carry to B from add
+          INC   A               ; B(acc) from mul cannot be FF so
+                                ; No worry about INC causing carry
+NEXTR0:   INC   R0              ; Point to next Y
+          DJNZ  R2,M10LUP
+          CLR   C
+MULRET:   RET
+
+;-----------------------------------------------------------------------------
+;         NIBBLE DIVIDE. QUOTIENT REPLACES DIVIDEND 
+;-----------------------------------------------------------------------------
+
+;  ENTRY -> CO IN Z9-Z4
+;   DIV10F - DIVIDE Z12:7 BY 10
+;   DIV10U - DIVIDE ANY DIVIDEND BY 10
+;
+;  EXIT  -> RESULT LEFT WHERE DIVIDEND WAS
+;	    REMAINDER IS LEFT IN B 
+;
+          
+DIV10D:   MOV	R0,#Z9          ; Divide by 10, 3 bytes Z9:7
+          MOV	R2,#03
+	  AJMP	DIV10T		; Divide by 10, 3 bytes R0 -> MS byte
+DIV10F:   MOV   R2,#06          ; # bytes in dividend
+DIV10T12: MOV   R0,#Z12         ; MSB of dividend
+DIV10T:   MOV	R4,#10		; Divide by 10
+DIVNIB:   MOV   B,#0            ; Start with 0 remainder   
+DNIBLUP:  MOV   A,B
+          XCHD  A,@R0
+          XCH   A,@R0
+          SWAP  A
+          MOV   B,R4  
+          DIV   AB
+          SWAP  A
+          XCH   A,@R0
+          SWAP  A
+          ORL   A,B
+          SWAP  A
+          MOV   B,R4  
+          DIV   AB
+          XCHD  A,@R0
+          DEC   R0
+          DJNZ  R2,DNIBLUP
+          RET
+
+;******************************************************************************
+;*        MISCELLANEOUS  routines                            
+;******************************************************************************
+
+;-----------------------------------------------------------------------------
+;         ZERO RAM BYTES
+;-----------------------------------------------------------------------------
+
+; Zero bytes in RAM memory
+ZZ12Z7:   MOV   R0,#Z12		; Zero Z12:6
+          AJMP  ZZR106
+BLANK6:   MOV   A,#11H          ; Blank 3 digits
+Z6BYT6:   MOV	R0,#Z6
+	  AJMP  ZZR106
+Z3BYT6:   MOV   R0,#Z6
+          AJMP  Z3BYT 
+Z3BYTC:   MOV   R0,#Z12
+Z3BYT:    MOV   R1,#03          ; 3 bytes to be zeroed
+          AJMP  ZANYB
+ZZ409:    MOV   R0,#Z9          ; Start zeroing from z9
+ZZR106:   MOV   R1,#06          ; 6 bytes to be zeroed
+ZANYB:    CLR   A
+FILL:     MOV   @R0,A
+          DEC   R0
+          DJNZ  R1,FILL
+          RET
+
+;-----------------------------------------------------------------------------
+;         CHECK FOR ALL BYTES IN A STRING = 0
+;-----------------------------------------------------------------------------
+
+;  ENTRY -> R0 = LSBYTE ADDRESS
+;  EXIT  ->  A = 0  IF ALL BYTES ZERO
+;
+CHK4ZER:  MOV	A,@R0
+	  JNZ	CHKZRET
+	  INC	R0
+CHK3ZER:  MOV	A,@R0
+	  JNZ	CHKZRET
+	  INC	R0
+	  MOV	A,@R0
+	  JNZ	CHKZRET
+	  INC	R0
+	  MOV	A,@R0
+CHKZRET:  RET
+
+
+;-----------------------------------------------------------------------------
+;         COPY BYTES
+;-----------------------------------------------------------------------------
+
+;  COPY6B  Copies exactly 6 bytes
+;  COPY3B  Copies exactly 3 bytes
+;  COPYBS  Copies R3 number of bytes
+;
+;  ENTRY-> R0 = MS byte of source
+;	   R1 = MS byte of destination
+;	   R3 = # bytes to be copied
+;  If R1>R0 then no restriction. If R1<R0 then no overlap allowed
+;
+COPY2B:   MOV	R3,#02
+	  AJMP  COPYBS
+COPY3B:   MOV   R3,#03          ; # bytes to be copied
+COPYBS:   MOV   A,@R0
+          MOV   @R1,A
+          DEC   R0
+          DEC   R1
+          DJNZ  R3,COPYBS
+          RET
+
+;-----------------------------------------------------------------------------
+;         INCREMENT N BYTE COUNTER WHOSE LS BYTE IS AT R0
+;-----------------------------------------------------------------------------
+ROUNDZ9:  MOV	R0,#Z9
+ROUND3:   MOV	A,@R0		; R0 -> 1 byte less than 3 bytes of interest
+TROUND0:  INC	R0
+TROUND:   JNB	ACC.7,INCRET
+INC3BY:   MOV   R3,#03          ; Loop counter
+          AJMP  INCLUP
+INC2BY:   MOV   R3,#02
+INCLUP:   INC   @R0
+          MOV   A,@R0
+          JNZ   INCRET
+          INC   R0
+          DJNZ  R3,INCLUP
+INCRET:   RET
+
+;-----------------------------------------------------------------------------
+;         COMPARE 3 BYTES
+;-----------------------------------------------------------------------------
+
+;  COMPARES A & B BY SUBTRACTING A FROM B BUT NOT ALTERING A OR B
+;
+;CMPCC    Unsigned data.  Magnitude only
+;  ENTRY ->   R0 = LSB OF A
+;	      R1 = LSB OF B
+;  EXIT  ->    C = 0 IF A<= B
+;	       C = 1 IF A > B
+;
+CMPCC2:   CLR   C
+	  AJMP  CMPCC2J
+
+CMPCC:    CLR   C
+          MOV   A,@R1           ; Minuend value
+          SUBB  A,@R0           ; Subtract
+          INC   R0              ; Subtrahend address
+          INC   R1              ; Minuend address
+CMPCC2J:  MOV	A,@R1
+	  SUBB	A,@R0
+	  INC	R0
+	  INC	R1
+	  MOV	A,@R1
+	  SUBB  A,@R0
+          RET
+
+; Comparing 2's complement, reverse result C if signs are opposite.
+;CMP2CPL  Signed or 2's CPL data comparison
+;  ENTRY ->   R0 = LSB OF A
+;             R1 = LSB OF B
+;  EXIT  ->    C = 0 IF A<= B (signed)
+;              C = 1 IF A > B (signed)
+;
+CMP2CPL:  ACALL	CMPCC
+	  MOV	A,@R1
+	  XRL	A,@R0
+	  JNB	ACC.7,$+4
+	  CPL	C
+	  RET
+
+; Reverse compare 2's complement data.
+;  ENTRY ->   R0 = LSB OF A
+;             R1 = LSB OF B
+;  EXIT  ->    C = 0 IF A>= B (signed)
+;              C = 1 IF A < B (signed)
+CMP2CPLR: MOV	A,R0
+	  XCH	A,R1
+	  MOV	R0,A
+	  ACALL CMP2CPL
+	  MOV	A,R0
+	  XCH	A,R1
+	  MOV	R0,A
+	  RET
+
+;-----------------------------------------------------------------------------
+;         NIBBLE SHIFT ROUTINES                           
+;-----------------------------------------------------------------------------
+; ENTRY: R0->MS byte
+;        R2-># bytes
+; EXIT:  R0->LS byte
+;        R3 incremented
+NSR2CPL3: MOV	R2,#3		; Nibble shift right 2's CPL value in 3 bytes
+	  MOV	A,@R0		; MS byte.  If neg shift in F
+	  RLC	A		; C = sign
+	  CLR	A
+	  SUBB	A,#0		; A=0 if pos, A=FF if neg
+	  AJMP  NIBSRLUP
+NSRZ12:	  MOV	R0,#Z12
+      	  MOV	R2,#06
+NIBSHFR:  CLR	A
+NIBSRLUP: XCH	A,@R0
+	  SWAP	A
+	  XCHD	A,@R0
+	  DEC	R0
+	  DJNZ	R2,NIBSRLUP
+	  INC	R3
+	  INC	R0
+	  RET
+
+; ENTRY: R0->LS byte
+;        R2-># bytes
+; EXIT:  R0->MS byte
+;        R3 decremented
+NSLZ7:	  MOV	R0,#Z7
+NSL6B:	  MOV	R2,#06
+NIBSHFL:  CLR	A
+NIBSLLUP: XCHD	A,@R0
+	  SWAP	A
+	  XCH	A,@R0
+	  INC	R0
+	  DJNZ	R2,NIBSLLUP
+	  DEC	R3
+	  DEC	R0
+	  RET
+
+
+;******************************************************************************
+;         SPECIAL FUNCTIONS                           
+;******************************************************************************
+
+;-----------------------------------------------------------------------------
+;         BINARY TO DECIMAL CONVERSION
+;-----------------------------------------------------------------------------
+
+;  BINARY SOURCE       Z9-Z7
+;  BCD DESTINATION     Z6-Z1
+;
+BINBCD:   ACALL Z3BYT6          ; Clear destination buffer
+          MOV   R1,#Z1          ; R1 points to Z1 of Z6:1 BCD result register
+BBCDLUP:  MOV   R0,#Z9          ;   in DIV10BB routine.
+          MOV   R2,#03
+          MOV   A,@R0
+          JNZ   CALLDIV         ; J if Z9 <> 0 & apply 3 loops of DIV by 10
+          DEC   R0
+          DEC   R2
+          MOV   A,@R0
+          JNZ   CALLDIV         ; J if Z8 <> 0 & apply 2 loops of DIV by 10
+          DEC   R0              ; Z7
+; End routine used when down to 1 byte
+          MOV   A,@R0
+          MOV   B,#0AH
+          DIV   AB              ; Z7/10
+          MOV   @R1,B           ; Put remainder in next Z6:1 location
+          INC   R1              ; Point to next location
+          MOV   B,#0AH
+          DIV   AB              ; Divide integer result by 10
+          MOV   @R1,B           ; Put remainder in next Z7:2 location
+          INC   R1              ; Point to next location
+          MOV   @R1,A           ; Put integer result in this Z8:3 location
+          MOV	Z6,#11H		; Pos pol so make blank
+          RET
+
+CALLDIV:  ACALL  DIV10T         ; DIV by 10
+          MOV   @R1,B           ; Put remainder of division in pointed location
+          INC   R1              ; Point to next Z6:1 location
+          AJMP  BBCDLUP
+
+;-----------------------------------------------------------------------------
+;         TRANSFER Z6-1 BCD DATA TO CHAR6-1 7-SEGMENT CHARACTERS
+;-----------------------------------------------------------------------------
+
+;Set CHAR display buffer & DP
+BCDCHR:   MOV	R0,#Z4		; Remove leading zeros
+BCDCHRLP: MOV	A,@R0
+	  JNZ   BCDCHR1		; No more leading zeros
+	  MOV	@R0,#17		; Table blank
+	  DEC	R0
+	  CJNE  R0,#Z1,BCDCHRLP
+
+BCDCHR1:  MOV   R0,#Z4          ; Transfer Z1-4 to CHAR1-4
+          MOV   R1,#CHAR4
+          MOV   R2,#04          ; Loop counter
+          MOV   DPTR,#DISDIG
+	  MOV	A,@R0
+	  MOVC	A,@A+DPTR
+CHARLP:
+          MOV   @R1,A
+          DEC   R0
+          DEC   R1
+	  MOV	A,@R0
+          MOVC	A,@A+DPTR
+          DJNZ  R2,CHARLP
+ALMSRET:  RET
+ 
+ 
+DISDIG:	  DB	0C0H,0F9H,0A4H,0B0H	; 0,1,2,3
+  	  DB    099H,092H,082H,0F8H	; 4,5,6,7
+	  DB    080H,090H,088H,083H     ; 8,9,A,b
+	  DB    0C6H,0A1H,086H,08EH     ; C,d,E,F
+          DB    0BFH,0FFH,0F7H          ; -,blank,_
+          NOP
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  CLR   EPSEL
+	  NOP
+	  NOP
+          JMP   PWROFF
